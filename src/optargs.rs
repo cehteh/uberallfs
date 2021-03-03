@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 
-pub fn uberallfs_args() -> App<'static, 'static> {
+pub fn uberallfs_optargs() -> App<'static, 'static> {
     App::new("uberallfs")
         .version(crate_version!())
         .author(crate_authors!())

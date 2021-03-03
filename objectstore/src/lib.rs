@@ -1,5 +1,5 @@
-mod args;
-pub use self::args::args;
+mod optargs;
+pub use self::optargs::optargs;
 
 use std::ffi::OsStr;
 

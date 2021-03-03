@@ -2,8 +2,8 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
-mod args;
-pub use self::args::uberallfs_args;
+mod optargs;
+pub use self::optargs::uberallfs_optargs;
 
 use objectstore;
 
@@ -14,9 +14,9 @@ use log::{debug, error, info, log_enabled, Level, LevelFilter};
 use simple_logger::SimpleLogger;
 
 fn main() {
-    let matches = uberallfs_args()
+    let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)
-        .subcommand(objectstore::args())
+        .subcommand(objectstore::optargs())
         .get_matches();
 
     init_logging(&matches);

@@ -1,6 +1,6 @@
 use clap::{App, AppSettings, Arg, SubCommand};
 
-pub fn args() -> App<'static, 'static> {
+pub fn optargs() -> App<'static, 'static> {
     SubCommand::with_name("objectstore")
         .about("Objectstore management")
         .arg(

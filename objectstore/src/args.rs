@@ -1,4 +1,4 @@
-use clap::{App, Arg, SubCommand};
+use clap::{App, AppSettings, Arg, SubCommand};
 
 pub fn args() -> App<'static, 'static> {
     SubCommand::with_name("objectstore")
@@ -8,6 +8,7 @@ pub fn args() -> App<'static, 'static> {
                 .required(true)
                 .help("The objectstore directory"),
         )
+        .setting(AppSettings::SubcommandRequired)
         .subcommand(
             SubCommand::with_name("init")
                 .about("Initialize a new objectstore")
@@ -26,27 +27,55 @@ pub fn args() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("export")
+            SubCommand::with_name("send")
                 .about("Exports an object")
                 .arg(
                     Arg::with_name("ID_OR_PATH")
                         .required(true)
                         .help("The object to export"),
                 )
+                //TODO:  glob type
                 .arg(
-                    Arg::with_name("FILE_OR_DIR")
-                        .required(true)
-                        .help("Destination for export"),
-                ), //TODO: recursive with depth && glob
+                    Arg::with_name("recursive")
+                        .short("r")
+                        .long("depth")
+                        .takes_value(true)
+                        .help("Do recursive export, up to <depth>"),
+                )
+                .arg(
+                    Arg::with_name("thin")
+                        .short("t")
+                        .long("thin")
+                        .help("Thin export, only metadata necessary for reconstruction"),
+                )
+                .arg(
+                    Arg::with_name("private")
+                        .long("private")
+                        .help("Include private objects"),
+                ),
         )
         .subcommand(
-            SubCommand::with_name("import")
-                .about("Imports an object")
+            SubCommand::with_name("receive")
+                .about("Imports objects")
+                //TODO:  glob type
                 .arg(
-                    Arg::with_name("FILE")
-                        .required(true)
-                        .help("Object archive to import"),
-                ), //TODO: recursive with depth && glob
+                    Arg::with_name("recursive")
+                        .short("r")
+                        .long("depth")
+                        .takes_value(true)
+                        .help("Constrain recursive import to <depth>"),
+                )
+                .arg(
+                    Arg::with_name("thin")
+                        .short("t")
+                        .long("thin")
+                        .help("Thin import, only metadata necessary for reconstruction"),
+                )
+                .arg(
+                    Arg::with_name("private")
+                        .long("private")
+                        .help("Include private objects"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("get-id")

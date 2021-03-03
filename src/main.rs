@@ -1,10 +1,9 @@
 #[macro_use]
 extern crate clap;
-use clap::{Arg, App};
+use clap::{AppSettings, ArgMatches};
 
 mod args;
 pub use self::args::uberallfs_args;
-
 
 use objectstore;
 
@@ -16,10 +15,18 @@ use simple_logger::SimpleLogger;
 
 fn main() {
     let matches = uberallfs_args()
+        .setting(AppSettings::SubcommandRequired)
         .subcommand(objectstore::args())
         .get_matches();
 
     init_logging(&matches);
+
+    match matches.subcommand() {
+        ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
+        (name, _) => {
+            unimplemented!("subcommand '{}'", name)
+        }
+    }
 }
 
 fn init_logging(matches: &ArgMatches) {

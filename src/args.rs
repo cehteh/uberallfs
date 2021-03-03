@@ -12,10 +12,16 @@ pub fn uberallfs_args() -> App<'static, 'static> {
                 .help("Enable debug mode"),
         )
         .arg(
+            Arg::with_name("quiet")
+                .short("q")
+                .long("quiet")
+                .help("Suppress any log output"),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
-                .multiple(true)
                 .long("verbose")
+                .multiple(true)
                 .help("Increment verbosity level"),
         )
 }

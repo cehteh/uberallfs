@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-env_logger = "0.8.2"
 clap = "2.33.0"
+simple_logger = "1.11"
 objectstore = { path = "objectstore" }
 
 

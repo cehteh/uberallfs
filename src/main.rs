@@ -2,18 +2,19 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
+use std::io;
+
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
 
 use objectstore;
 
-#[macro_use]
 extern crate log;
-use log::{debug, error, info, log_enabled, Level, LevelFilter};
+use log::LevelFilter;
 
 use simple_logger::SimpleLogger;
 
-fn main() {
+fn main() -> io::Result<()> {
     let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)
         .subcommand(objectstore::optargs())

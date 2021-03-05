@@ -384,7 +384,65 @@
       
 
     
- 
+
+** Concise Permissions
+
+   Uberallfs implements a set of /concise permissions/ unlike traditional 'rwx' Unix
+   permissions with their overloaded meaning for directories.
+
+   These permissions are mapped onto the available permissions of the target operating
+   system. Permissions are tied to (lists of) public keys. There are no users and groups
+   otherwise. There is one special (all zero?) Key which means 'anyone'.
+
+   A permission which would allow full access (including deleting/overwriting) all data also
+   allows a node to take authority over an object. Nodes which can't gain authority over an
+   object must pass their mutations to the authoritative node where they will be validated.
+
+   Access control is inclusive, when one could gain access because the key is listed in the
+   respective Admin list, then one gets that permission implicitly.
+
+*** File Permissions
+
+    File permission are initially relatively simple, only 'append' added over unix
+    permissions. Should be self explanatory.
+
+    * read
+    * write (authoritative)
+    * append
+
+*** Directory Permissions
+
+    *WIP!*
+
+    With directories things become more complicated.
+
+    * list ::
+      Allow listing of the directory content.
+    * list_accessible ::
+      Listing is filtered to content where one has access (any) to.
+    * list_authoritative ::
+      Listing is filtered to content where one has authority for.
+    * add ::
+      Add new objects.
+    * add_authoritative ::
+      Can only add objects where one is authoritative for.
+    * add_anonymous ::
+      Can add anonymous objects.
+    * rename ::
+      rename an object *within* the same directory.
+    * rename_authoritative ::
+      rename an object *within* the same directory where one is authoritative for.
+    * rename_anonymous ::
+      rename an anonymous object *within* the same directory.
+    * delete (authoritative) ::
+      delete any object.
+    * delete_authoritative ::
+      Can only delete objects where one is authoritative for.
+    * delete_anonymous ::
+      Can delete anonymous objects.
+
+    Further rules can be defined how objects are created, what extra permissions and keys apply (inherit from directory,..)
+
 * Problems/Solutions
 
 ** Distributed object deletion

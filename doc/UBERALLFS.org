@@ -141,6 +141,10 @@
    are cached for fast lookup. If that fails then a discovery is initiated (Details to be
    worked out).
 
+** Key Management
+
+   creates user and node keys, manages signatures/pki
+
 ** Distributed PKI
 
    Future versions will include a distributed public key infrastructure. This augments the
@@ -230,7 +234,59 @@
 *** hash
     Torrent like hash list for immutable files.
 
+*** link
 
+    When an object type changes, its identifier changes. This .link type is then a pointer to
+    the new identifier.
+
+*** rule
+
+    It is planned to make a simple rule engine that automates policies on objects (mostly
+    directories). For example:
+
+    - Size restrictions for files.
+    - Accepted filename patterns.
+    - dirs/files only.
+    - Change the properties/identifier of a file, eg. a when a '.mkv.part' file becomes
+      renamed to '.mkv' its type is changed to 'public immutable'.
+
+* Disk Layout
+
+  There are (so far) three main components which need to be visible on the host
+  filesystem. These are designed to be in the same place (shared directory) as well as in
+  different places with the components shared over several uberallfs instances.
+
+  The basic use case is that all data resides in a single directory which also serves as
+  mountpoint for the fuse filesystem, thus shadowing they underlying data.
+
+** objectstore
+
+   The objectstore can be freestanding/self contained no external configuration is needed.
+
+   - objects :: used for the objectstore
+   - objects/??/ :: any 2 character dir is used for the first level (4096 dirs, base64)
+   - objects/root/ :: symlink to the root dir object
+   - objects/tmp/ :: for safe tempfile handling
+   - objects/bak/ :: deleted objects with some grace period, recovered objects
+   - objects/volatile :: can be a tmpfs for temporary objects
+   - objects/volatile/??/ :: any 2 character dir is used for the first level (4096 dirs)
+   - config :: configuration files
+
+** node
+
+   The 'node' manages the data distribution between other nodes, forming a peer to peer network.
+
+   For that it keeps the networks addresses of other nodes and manages network related keys.
+
+   - config :: configuration files
+   - keystore :: some of the keys used to operate the node. Others may be in
+     ~/.config/uberallfs and are loaded on startup. Private keys will be isolated, TBD.
+   - .uberallfs.sock :: socket for local node control
+
+** fuse
+
+   When fuse gets mounted it may shadow all of the above and present a normal looking filesystem.
+   Only files starting with '.uberallfs.' at the root are reserved (control socket etc).
 
 * Access Control
   :PROPERTIES:
@@ -297,21 +353,23 @@
 
 ** Security Implications
 
-   TBD: in short one who once had (administrative) access to the object can replay that old
-   version of the metadata under some conditions since the 'trail' and generation count can
-   be incomplete. (write example how this can happen, any solution for this?)
+*** replay attack
 
-   1. A creates a file with B and C as Admin
-   2. B takes the token from A   A->B
-   3. C takes the token from B   A->B->C
-   4. C removes B from an Administrative list
-   5. B takes the token from C back  A->B<-C
-   6. B replays the 'perm' metadata from 2. (gains Admin back)
-   7. A takes the file from B but can not discover the tampering
+    TBD: in short one who once had (administrative) access to the object can replay that old
+    version of the metadata under some conditions since the 'trail' and generation count can
+    be incomplete. (write example how this can happen, any solution for this?)
 
-   The only 'weak' protection against this are the expiration dates. When these are short
-   enough they limit the time window in which such an attack can be done and constrain the
-   necessary lifetime for signature revocations.
+    1. A creates a file with B and C as Admin
+    2. B takes the token from A   A->B
+    3. C takes the token from B   A->B->C
+    4. C removes B from an Administrative list
+    5. B takes the token from C back  A->B<-C
+    6. B replays the 'perm' metadata from 2. (gains Admin back)
+    7. A takes the file from B but can not discover the tampering
+
+    The only 'weak' protection against this are the expiration dates. When these are short
+    enough they limit the time window in which such an attack can be done and constrain the
+    necessary lifetime for signature revocations.
 
 *** malicious object mutation
 
@@ -327,3 +385,27 @@
 
     
  
+* Problems/Solutions
+
+** Distributed object deletion
+
+   Objects may be referenced from different locations all over the network. Deleting a object
+   from a directory is as simple as just remove it from there when one has authority over the
+   directory. But this does not mean the Object itself can be removed from the object store
+   since other nodes may still refer to it.
+
+   - Solutions ::
+     * When no parts of the object are locally authoritative (no data!) then it can be removed.
+     * Every Object has a 'grace' time for which it will be kept with a 'deleted' flag. Once
+       this grace time is expired it can be deleted.
+
+       * Any other node which references this object should poll the object within this grace
+         time. When the authoritative node responds that the object ought to be deleted then
+         * Node without full access are advised to synchronize the object
+         * Nodes with full access are advised to adopt the object.
+           * Once adopted and all data is transferred the *data* can deleted. Metadata (trail)
+             needs to stay alive until the grace time is expired.
+
+       This grace time can be exponential, starting from for example 30 seconds, doubling on
+       every expire where the object is still in use up to some upper limit.
+       

@@ -406,9 +406,10 @@
     File permission are initially relatively simple, only 'append' added over unix
     permissions. Should be self explanatory.
 
-    * read
-    * write (authoritative)
-    * append
+    * read ::
+    * write ::
+      This is the *authoritative* permission.
+    * append ::
 
 *** Directory Permissions
 
@@ -418,28 +419,30 @@
 
     * list ::
       Allow listing of the directory content.
-    * list_accessible ::
-      Listing is filtered to content where one has access (any) to.
-    * list_authoritative ::
+    * list-accessible ::
+      Listing is filtered to content where one has (any) access to.
+    * list-authoritative ::
       Listing is filtered to content where one has authority for.
     * add ::
       Add new objects.
-    * add_authoritative ::
-      Can only add objects where one is authoritative for.
-    * add_anonymous ::
-      Can add anonymous objects.
+    * add-authoritative ::
+      Only add objects where one is authoritative for.
+    * add-anonymous ::
+      Add anonymous objects.
     * rename ::
-      rename an object *within* the same directory.
-    * rename_authoritative ::
-      rename an object *within* the same directory where one is authoritative for.
-    * rename_anonymous ::
-      rename an anonymous object *within* the same directory.
-    * delete (authoritative) ::
-      delete any object.
-    * delete_authoritative ::
-      Can only delete objects where one is authoritative for.
-    * delete_anonymous ::
-      Can delete anonymous objects.
+      Rename an object within the same directory. Moving objects across directories are
+      handled like add/delete on each directory.
+    * rename-authoritative ::
+      Rename an object within the same directory where one is authoritative for.
+    * rename-anonymous ::
+      Rename an anonymous object within the same directory.
+    * delete ::
+      Delete any object.
+      This is the *authoritative* permission.
+    * delete-authoritative ::
+      Delete objects where one is authoritative for.
+    * delete-anonymous ::
+      Delete anonymous objects.
 
     Further rules can be defined how objects are created, what extra permissions and keys apply (inherit from directory,..)
 

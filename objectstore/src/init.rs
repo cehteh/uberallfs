@@ -1,9 +1,10 @@
 use clap::ArgMatches;
 use std::ffi::OsStr;
-use std::fs::{self, DirBuilder};
+use std::fs::{self, create_dir_all};
 use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
+#[allow(unused_imports)]
 use log::{debug, error, info, trace};
 
 macro_rules! return_other_error {
@@ -18,7 +19,7 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
     //   - is not a symlink AND
     //     - does not exist
     //     - is an empty directory
-    //     - exists and is already an objectstore AND the --force option was given
+    //     - exists AND is already an objectstore AND the --force option was given
     if dir.exists() {
         if dir
             .symlink_metadata()
@@ -26,13 +27,15 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
             .unwrap_or(false)
         {
             let mut objectstore_dir = PathBuf::from(dir);
-            objectstore_dir.push(".uberallfs.objectstore.version");
+            objectstore_dir.push("objectstore.version");
 
-            if objectstore_dir.is_file() && !force {
-                return_other_error!(
-                    "'{}' exists, is a objectstore, no --force given",
-                    dir.display()
-                )
+            if objectstore_dir.is_file() {
+                if !force {
+                    return_other_error!(
+                        "'{}' exists, is a objectstore, no --force given",
+                        dir.display()
+                    )
+                }
             } else if dir.read_dir()?.next().is_some() {
                 return_other_error!("'{}' exist and is not empty", dir.display())
             }
@@ -44,18 +47,50 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
     Ok(())
 }
 
-pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
-    valid_objectstore_dir(Path::new(dir), matches.is_present("force"))?;
 
-    //    DirBuilder::new().recursive(true).create(dir)?;
+pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
+    let dir = Path::new(dir);
+
+    valid_objectstore_dir(dir, matches.is_present("force"))?;
+
+    create_dir_all(dir)?;
 
     // initialize objectstore structure
+    let mut objectstore_dir = PathBuf::from(dir);
+    objectstore_dir.push("config");
+    create_dir_all(&objectstore_dir)?;
 
-    // unpack and verify import
+    let mut objectstore_dir = PathBuf::from(dir);
+    objectstore_dir.push("objects");
+    create_dir_all(&objectstore_dir)?;
+
+    for sub in ["tmp", "delete", "volatile"].iter() {
+        objectstore_dir.push(sub);
+        create_dir_all(&objectstore_dir)?;
+        objectstore_dir.pop();
+    }
+
+    const URL_SAFE_ENCODE: &[u8; 64] = &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
+    for a in URL_SAFE_ENCODE.into_iter() {
+        for b in URL_SAFE_ENCODE.into_iter() {
+            objectstore_dir.push(format!("{}{}", *a as char, *b as char));
+            create_dir_all(&objectstore_dir)?;
+            objectstore_dir.pop();
+        }
+    }
+
+
+    //TODO: unpack and verify import
 
     // or create a private new root
 
     // link the rootdir
+    //   - objects/root/ :: symlink to the root dir object
+
+    // updating the version comes last
+    let mut objectstore_dir = PathBuf::from(dir);
+    objectstore_dir.push("objectstore.version");
+    fs::write(objectstore_dir, format!("{}\n", crate::VERSION))?;
 
     Ok(())
 }

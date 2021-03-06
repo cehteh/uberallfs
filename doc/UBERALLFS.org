@@ -263,15 +263,17 @@
 
    The objectstore can be freestanding/self contained no external configuration is needed.
 
-   - objects :: used for the objectstore
+   - objects/ :: used for the objectstore
    - objects/??/ :: any 2 character dir is used for the first level (4096 dirs, base64)
    - objects/root/ :: symlink to the root dir object
    - objects/tmp/ :: for safe tempfile handling
-   - objects/bak/ :: deleted objects with some grace period, recovered objects
+   - objects/delete/ :: deleted objects with some grace period
    - objects/volatile :: can be a tmpfs for temporary objects
    - objects/volatile/??/ :: any 2 character dir is used for the first level (4096 dirs)
-   - config :: configuration files
-   - .uberallfs.objectstore.version :: version identifier
+   - config/ :: configuration files
+   - objectstore.version :: version identifier
+
+   Planned: links to other objectstores on local computer, possibly on slower media for archives.
 
 ** node
 
@@ -279,11 +281,12 @@
 
    For that it keeps the networks addresses of other nodes and manages network related keys.
 
-   - config :: configuration files
-   - keystore :: some of the keys used to operate the node. Others may be in
-     ~/.config/uberallfs and are loaded on startup. Private keys will be isolated, TBD.
-   - .uberallfs.sock :: socket for local node control
-   - .uberallfs.node.version :: version identifier
+   - config/ :: configuration files
+   - keystore/ ::
+     some of the keys used to operate the node. Others may be in ~/.config/uberallfs and are
+     loaded on startup. Private keys will be isolated, TBD.
+   - uberallfs.sock :: socket for local node control
+   - node.version :: version identifier
 
 ** fuse
 

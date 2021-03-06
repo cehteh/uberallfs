@@ -7,7 +7,11 @@ pub use self::optargs::optargs;
 mod init;
 
 extern crate log;
+
+#[allow(unused_imports)]
 use log::{debug, error, trace, info};
+
+pub const VERSION: u16 = 0;
 
 pub fn cmd(matches: &ArgMatches) -> io::Result<()> {
     let dir = matches.value_of_os("DIRECTORY").unwrap();

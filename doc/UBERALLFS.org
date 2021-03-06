@@ -241,14 +241,22 @@
 
 *** rule
 
-    It is planned to make a simple rule engine that automates policies on objects (mostly
-    directories). For example:
-
     - Size restrictions for files.
     - Accepted filename patterns.
     - dirs/files only.
     - Change the properties/identifier of a file, eg. a when a '.mkv.part' file becomes
       renamed to '.mkv' its type is changed to 'public immutable'.
+
+    It is planned to make a simple rule engine that automates policies on objects (mostly
+    directories). For example:
+
+** Ideas
+
+   Keep lazy stats (coarse granularity, infrequently written to disk, with risk of loosing data in a crash)
+
+   - atime :: know when the object was last used
+   - afreq :: average frequency of use (rolling average?)
+
 
 * Disk Layout
 

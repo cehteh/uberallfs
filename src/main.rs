@@ -7,8 +7,6 @@ use std::io;
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
 
-use objectstore;
-
 extern crate log;
 use log::LevelFilter;
 
@@ -48,7 +46,7 @@ fn init_logging(matches: &ArgMatches) {
         2 => LevelFilter::Warn,
         3 => LevelFilter::Info,
         4 => LevelFilter::Debug,
-        5 | _ => LevelFilter::Trace,
+        _ => LevelFilter::Trace,
     };
 
     SimpleLogger::new()

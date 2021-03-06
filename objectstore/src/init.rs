@@ -22,8 +22,7 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
     //     - exists AND is already an objectstore AND the --force option was given
     if dir.exists() {
         if dir
-            .symlink_metadata()
-            .and_then(|dir_m| Ok(dir_m.file_type().is_dir()))
+            .symlink_metadata().map(|dir_m| dir_m.file_type().is_dir())
             .unwrap_or(false)
         {
             let mut objectstore_dir = PathBuf::from(dir);
@@ -71,8 +70,8 @@ pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
     }
 
     const URL_SAFE_ENCODE: &[u8; 64] = &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
-    for a in URL_SAFE_ENCODE.into_iter() {
-        for b in URL_SAFE_ENCODE.into_iter() {
+    for a in URL_SAFE_ENCODE.iter() {
+        for b in URL_SAFE_ENCODE.iter() {
             objectstore_dir.push(format!("{}{}", *a as char, *b as char));
             create_dir_all(&objectstore_dir)?;
             objectstore_dir.pop();

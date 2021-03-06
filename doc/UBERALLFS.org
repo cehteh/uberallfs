@@ -271,6 +271,7 @@
    - objects/volatile :: can be a tmpfs for temporary objects
    - objects/volatile/??/ :: any 2 character dir is used for the first level (4096 dirs)
    - config :: configuration files
+   - .uberallfs.objectstore.version :: version identifier
 
 ** node
 
@@ -282,11 +283,13 @@
    - keystore :: some of the keys used to operate the node. Others may be in
      ~/.config/uberallfs and are loaded on startup. Private keys will be isolated, TBD.
    - .uberallfs.sock :: socket for local node control
+   - .uberallfs.node.version :: version identifier
 
 ** fuse
 
-   When fuse gets mounted it may shadow all of the above and present a normal looking filesystem.
-   Only files starting with '.uberallfs.' at the root are reserved (control socket etc).
+   When fuse gets mounted it may shadow all of the above and present POSIX compatible
+   file system.  Only files starting with '.uberallfs.' at the root are reserved (control
+   socket etc).
 
 * Access Control
   :PROPERTIES:

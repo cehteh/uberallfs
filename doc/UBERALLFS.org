@@ -26,6 +26,8 @@
    access is requested they synchronize the object with the nodes who hold the original
    data. This synchronization is managed by the current token owner.
 
+   [[#ead96b87-abaf-43e6-89a8-111b9a8799d3][Look here for examples how to use it]]
+
 ** Features and Goals
 
 *** Caching and pinning objects
@@ -60,7 +62,6 @@
     to utilize better bandwidth sharing (Bittorrent alike).
 
 
-
 ** Design Choices
    Uberallfs uses 'opinionated' Design. Protocols include a single version number which fully
    defines the properties, sizes and algorithms used. Future versions will be backward
@@ -79,7 +80,7 @@
 ** Object Store
 
    At the core is a object store where all filesystem objects are cached. Later support for
-   volatile objects is planned to allow once used streaming data. [[#bd6e60d2-31a6-46f8-87ec-173f395ef49b][For Details see below.]]
+   volatile objects is planned to allow once used streaming data. [[#bd6e60d2-31a6-46f8-87ec-173f395ef49b][For Details see below]].
 
 ** Frontends
 
@@ -125,15 +126,14 @@
 
    [[#62c4e059-5538-48a1-953a-43c1c9a5d7fb][Details below.]]
 
-   planned: eventually a special tree object which holds revoked signatures, must be safe
-   against DoS, needs some thinking.
-
 ** Network / Sessions
 
    A node establishes a session with another node on behalf of a user/key. Each session is
    then authenticated for this keys which is used for access control. Sessions are keep state
    for some operations. As long a session is alive these states are valid. When a session dies
    unexpectedly then these states and all associated data gets cleaned up/rolled back.
+
+   [[#d2f3ef15-6e9a-4cae-9131-1534664ffa98][Handled by the Node]].
 
 ** Node Discovery
 
@@ -208,6 +208,13 @@
    Eventually some more Types might be supported, for example hashing could be indirect being
    the hash over a bittorrent like list of hashes. This may even become the default for
    immutable objects at some point.
+
+*** Plans
+
+    Later file encryption might be added. This is not directly on topic for uberallfs as
+    objects are only distributed to nodes that are allowed to (at least) read them. File
+    encryption would remove this requirement and allow proxying/caching on nodes that which
+    don't have access to the object.
 
 ** Object Types
 
@@ -361,9 +368,15 @@
     administrative Keys (usually the one who did the change).
 
 
+  TODO: creation date and expire parameters are required, shall these be signed here?
+
 ** Brainstorm/Ideas
 
    - Quorum :: M of N Admins must grant permission to be effective
+
+   - Key revocation :: special tree object which holds revoked signatures, must be safe
+     against DoS, needs some thinking.
+
 
 ** Security Implications
 
@@ -459,6 +472,122 @@
       Delete anonymous objects.
 
     Further rules can be defined how objects are created, what extra permissions and keys apply (inherit from directory,..)
+
+* The Node
+  :PROPERTIES:
+  :CUSTOM_ID: d2f3ef15-6e9a-4cae-9131-1534664ffa98
+  :END:
+
+  
+** Planned
+
+*** Realms
+
+* HowTo
+  :PROPERTIES:
+  :CUSTOM_ID: ead96b87-abaf-43e6-89a8-111b9a8799d3
+  :END:
+
+  WIP: Envisioned usage
+
+  Examples here using defaults for most options. Defaults should always be the be safe option.
+
+** Plumbing
+
+   This examples are using 'plumbing' commands, later 'porcelain' will be added to make usage
+   easier.
+
+*** Initialize and start a new uberallfs node
+
+**** With private root
+
+     #+BEGIN_EXAMPLE
+     $ uberallfs objectstore ./DIR_A init
+     $ uberallfs node ./DIR_A init
+     $ uberallfs node ./DIR_A start
+     $ uberallfs fuse ./DIR_A mount
+     #+END_EXAMPLE
+
+     Will result in a uberallfs mounted on './DIR_A' with a private (by default) root
+     directory.
+
+**** Make a Directory shareable
+
+     We created a 'private' root directory in the previous step. For being used as distributed
+     directory its type must be changed.
+
+     #+BEGIN_EXAMPLE
+     $ uberallfs objectstore ./DIR_A chtype public_mutable /
+     #+END_EXAMPLE
+
+     This changes the type and sets up a minimal ACL to make the executing user Creator of the
+     object.
+
+**** Shared Root Dir
+
+     The root directory is nothing special an can be shared as any other object, the only
+     difference is that the root directory must be present in the objectstore for almost all
+     other operations (like mounting the file system). Thus objectstore initialization can
+     already takes care for setting up the root directory.
+
+     On the new filesystem the node must be initialized first for exporting the (default
+     generated) users public key.
+
+     #+BEGIN_EXAMPLE
+     $ uberallfs node ./DIR_B init
+     $ uberallfs node ./DIR_B export-key
+     base64encodedpubkey
+     #+END_EXAMPLE
+
+     * By exported Directory
+
+       Give the new user/key access to the root directory in './DIR_A' and export it into an
+       archive. This thin export only contains the minimum necessary metadata to reconstruct
+       the content by querying the original node.
+
+       #+BEGIN_EXAMPLE
+       $ uberallfs objectstore ./DIR_A chacl +super_admin base64encodedpubkey /
+       $ uberallfs objectstore ./DIR_A send --thin / >ARCHIVE
+       #+END_EXAMPLE
+
+       Now we can import that archive as new root directory and go on.
+       #+BEGIN_EXAMPLE
+       $ uberallfs objectstore ./DIR_B init --import ARCHIVE
+       $ uberallfs node ./DIR_B start
+       $ uberallfs fuse ./DIR_B mount
+       #+END_EXAMPLE
+
+     * By URL
+
+       Instead importing an ARCHIVE one can also supply a URL the root dir will then be
+       fetched over the network.
+
+       The an URL has the form 'uberallfs://host:port/identifier' and can be shown by:
+
+       #+BEGIN_EXAMPLE
+       $ uberallfs node ./DIR_A show --url /
+       uberallfs://localhost:port/base64encodedidentifier
+       #+END_EXAMPLE
+
+       This URL can then be used to bootstrap the new objectstore
+       #+BEGIN_EXAMPLE
+       $ uberallfs objectstore ./DIR_B init --no-root
+       $ uberallfs node ./DIR_B start
+       $ uberallfs node ./DIR_B fetch uberallfs://localhost:port/base64encodedidentifier
+       $ uberallfs objectstore ./DIR_B root --set base64encodedidentifier
+       $ uberallfs fuse ./DIR_B mount
+       #+END_EXAMPLE
+
+
+ # *** Admin Things
+ # ** Porcelain
+
+ #    #+BEGIN_EXAMPLE
+ #    $ uberallfs init ./directory [--import <ARCIVE_OR_URL>]
+ #    $ uberallfs start ./directory
+ #    $ uberallfs stop ./directory
+ #    #+END_EXAMPLE
+
 
 * Problems/Solutions
 

@@ -5,6 +5,7 @@ mod optargs;
 pub use self::optargs::optargs;
 
 mod init;
+mod objectstore;
 
 extern crate log;
 
@@ -28,17 +29,3 @@ pub fn cmd(matches: &ArgMatches) -> io::Result<()> {
 
 
 
-
-struct ObjectStore {
-}
-
-impl ObjectStore {
-    //create
-    //open
-
-}
-
-impl Drop for ObjectStore {
-    fn drop(&mut self){
-    }
-}

@@ -7,6 +7,8 @@ use std::path::{Path, PathBuf};
 #[allow(unused_imports)]
 use log::{debug, error, info, trace};
 
+use crate::objectstore::ObjectStore;
+
 macro_rules! return_other_error {
     ($fmt:literal, $($e:expr),*) => {
         return Err(Error::new(ErrorKind::Other, format!($fmt, $($e,)*)));
@@ -78,6 +80,11 @@ pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
         }
     }
 
+    let mut objectstore_dir = PathBuf::from(dir);
+    objectstore_dir.push("objectstore.version");
+    fs::write(objectstore_dir, format!("{}\n", crate::VERSION))?;
+
+    let objectstore = ObjectStore::open(dir);
 
     //TODO: unpack and verify import
 
@@ -86,10 +93,6 @@ pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
     // link the rootdir
     //   - objects/root/ :: symlink to the root dir object
 
-    // updating the version comes last
-    let mut objectstore_dir = PathBuf::from(dir);
-    objectstore_dir.push("objectstore.version");
-    fs::write(objectstore_dir, format!("{}\n", crate::VERSION))?;
 
     Ok(())
 }

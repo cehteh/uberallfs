@@ -26,6 +26,11 @@ fn init_optargs() -> App<'static, 'static> {
                 .help("Force overwriting an existing directory"),
         )
         .arg(
+            Arg::with_name("noroot")
+                .long("no-root")
+                .help("Initalize without an root directory"),
+        )
+        .arg(
             Arg::with_name("ARCHIVE")
                 .short("i")
                 .long("import")

@@ -6,6 +6,7 @@ pub use self::optargs::optargs;
 
 mod init;
 mod objectstore;
+mod object;
 
 extern crate log;
 
@@ -20,7 +21,7 @@ pub fn cmd(matches: &ArgMatches) -> io::Result<()> {
     trace!("dir: {:?}", dir);
 
     match matches.subcommand() {
-        ("init", Some(sub_m)) => init::init(dir, sub_m),
+        ("init", Some(sub_m)) => init::opt_init(dir, sub_m),
         (name, _) => {
             unimplemented!("subcommand '{}'", name)
         }

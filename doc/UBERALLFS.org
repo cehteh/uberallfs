@@ -42,10 +42,10 @@
 
 *** Strong security and anonymity available
     Objects can be either instantiated by a 'creator' who defines security policies about who
-    has access to them OR published as anonymous immutable.
+    has access to them OR published as anonymous/immutable.
 
-*** mixed in local data
-    Objects may be local only and never be shared.
+*** mixed in private data
+    Objects may be private only and never be shared.
 
 *** redundant storage
     Different levels of redundancy are planned, raid1 like redundancy where sync/close calls
@@ -143,7 +143,8 @@
 
 ** Key Management
 
-   creates user and node keys, manages signatures/pki
+   creates user and node keys, manages signatures/pki,
+   key-agent process.
 
 ** Distributed PKI
 
@@ -227,6 +228,12 @@
 
 *** blob
     The actual object (file) data.
+    can be sparse/incomplete with not yet synchronized data.
+
+*** part
+    WIP: parts of blobs with own identifiers.
+
+** Metadata Types
 
 *** perm
     Security manifest, access control and security related metadata.
@@ -297,6 +304,7 @@
    For that it keeps the networks addresses of other nodes and manages network related keys.
 
    - config/ :: configuration files
+   - nodes/??/ :: information about other nodes
    - keystore/ ::
      some of the keys used to operate the node. Others may be in ~/.config/uberallfs and are
      loaded on startup. Private keys will be isolated, TBD.
@@ -445,10 +453,17 @@
     With directories things become more complicated.
 
     * list ::
-      Allow listing of the directory content.
+      Allow listing of the directory filenames.
+      (purely know they exists, no object identifiers)
     * list-accessible ::
       Listing is filtered to content where one has (any) access to.
     * list-authoritative ::
+      Listing is filtered to content where one has authority for.
+    * read ::
+      Allow listing of the directory content including object identifiers.
+    * read-accessible ::
+      Listing is filtered to content where one has (any) access to.
+    * read-authoritative ::
       Listing is filtered to content where one has authority for.
     * add ::
       Add new objects.
@@ -492,21 +507,30 @@
 
   Examples here using defaults for most options. Defaults should always be the be safe option.
 
-** Plumbing
+** Plumbing vs Porcelain
 
-   This examples are using 'plumbing' commands, later 'porcelain' will be added to make usage
-   easier.
+   This examples starting with 'plumbing' commands to show the steps involved to set something
+   up. When applicable 'porcelain' is added next to it, in general porcelain commands simplify
+   usage, but depend on some preconditions, like that the filesystem is already set up and
+   mounted (unless for the setup commands).
 
 *** Initialize and start a new uberallfs node
 
 **** With private root
 
-     #+BEGIN_EXAMPLE
+     #+CAPTION: plumbing
+     #+BEGIN_SRC
      $ uberallfs objectstore ./DIR_A init
      $ uberallfs node ./DIR_A init
      $ uberallfs node ./DIR_A start
      $ uberallfs fuse ./DIR_A mount
-     #+END_EXAMPLE
+     #+END_SRC
+
+     #+CAPTION: porcelain
+     #+BEGIN_SRC
+     $ uberallfs init ./DIR_A
+     $ uberallfs start ./DIR_A
+     #+END_SRC
 
      Will result in a uberallfs mounted on './DIR_A' with a private (by default) root
      directory.
@@ -516,12 +540,20 @@
      We created a 'private' root directory in the previous step. For being used as distributed
      directory its type must be changed.
 
-     #+BEGIN_EXAMPLE
+     #+CAPTION: plumbing
+     #+BEGIN_SRC
      $ uberallfs objectstore ./DIR_A chtype public_mutable /
-     #+END_EXAMPLE
+     #+END_SRC
 
      This changes the type and sets up a minimal ACL to make the executing user Creator of the
      object.
+
+     Porcelain will only work on a running (mounted) filesystem.
+
+     #+CAPTION: porcelain
+     #+BEGIN_SRC
+     $ uberallfs chtype public_mutable ./DIR_A
+     #+END_SRC
 
 **** Shared Root Dir
 
@@ -533,11 +565,19 @@
      On the new filesystem the node must be initialized first for exporting the (default
      generated) users public key.
 
-     #+BEGIN_EXAMPLE
+     #+CAPTION: plumbing
+     #+BEGIN_SRC
      $ uberallfs node ./DIR_B init
      $ uberallfs node ./DIR_B export-key
      base64encodedpubkey
-     #+END_EXAMPLE
+     #+END_SRC
+
+     #+CAPTION: porcelain
+     #+BEGIN_SRC
+     $ uberallfs node ./DIR_B init
+     $ uberallfs export_key ./DIR_B
+     base64encodedpubkey
+     #+END_SRC
 
      * By exported Directory
 
@@ -545,17 +585,32 @@
        archive. This thin export only contains the minimum necessary metadata to reconstruct
        the content by querying the original node.
 
-       #+BEGIN_EXAMPLE
+       #+CAPTION: plumbing
+       #+BEGIN_SRC
        $ uberallfs objectstore ./DIR_A chacl +super_admin base64encodedpubkey /
        $ uberallfs objectstore ./DIR_A send --thin / >ARCHIVE
-       #+END_EXAMPLE
+       #+END_SRC
+
+       #+CAPTION: porcelain
+       #+BEGIN_SRC
+       $ uberallfs chacl +super_admin base64encodedpubkey /DIR_A
+       $ uberallfs export ./DIR_A ARCHIVE
+       #+END_SRC
 
        Now we can import that archive as new root directory and go on.
-       #+BEGIN_EXAMPLE
+
+       #+CAPTION: plumbing
+       #+BEGIN_SRC
        $ uberallfs objectstore ./DIR_B init --import ARCHIVE
        $ uberallfs node ./DIR_B start
        $ uberallfs fuse ./DIR_B mount
-       #+END_EXAMPLE
+       #+END_SRC
+
+       #+CAPTION: porcelain
+       #+BEGIN_SRC
+       $ uberallfs import --root ARCHIVE ./DIR_B
+       $ uberallfs start ./DIR_B
+       #+END_SRC
 
      * By URL
 
@@ -564,31 +619,48 @@
 
        The an URL has the form 'uberallfs://host:port/identifier' and can be shown by:
 
-       #+BEGIN_EXAMPLE
+       #+CAPTION: plumbing
+       #+BEGIN_SRC
        $ uberallfs node ./DIR_A show --url /
        uberallfs://localhost:port/base64encodedidentifier
-       #+END_EXAMPLE
+       #+END_SRC
+
+       #+CAPTION: porcelain
+       #+BEGIN_SRC
+       $ uberallfs show-url ./DIR_A
+       uberallfs://localhost:port/base64encodedidentifier
+       #+END_SRC
 
        This URL can then be used to bootstrap the new objectstore
-       #+BEGIN_EXAMPLE
+
+       #+CAPTION: plumbing
+       #+BEGIN_SRC
        $ uberallfs objectstore ./DIR_B init --no-root
        $ uberallfs node ./DIR_B start
        $ uberallfs node ./DIR_B fetch uberallfs://localhost:port/base64encodedidentifier
        $ uberallfs objectstore ./DIR_B root --set base64encodedidentifier
        $ uberallfs fuse ./DIR_B mount
-       #+END_EXAMPLE
+       #+END_SRC
+
+       'insta' does all DWIM magic to get a uberallfs running. initialization, starting and
+       mounting the node. Possibly it asks some interactive questions (for deploying keys).
+       An existing dir will be reused if no data gets overwritten (same root again).
+
+       #+CAPTION: porcelain
+       #+BEGIN_SRC
+       $ uberallfs insta ./DIR_B --from uberallfs://localhost:port/base64encodedidentifier
+       #+END_SRC
 
 
  # *** Admin Things
  # ** Porcelain
 
- #    #+BEGIN_EXAMPLE
+ #    #+BEGIN_SRC
  #    $ uberallfs init ./directory [--import <ARCIVE_OR_URL>]
  #    $ uberallfs start ./directory
  #    $ uberallfs stop ./directory
- #    #+END_EXAMPLE
-
-
+ #    #+END_SRC
+ 
 * Problems/Solutions
 
 ** Distributed object deletion

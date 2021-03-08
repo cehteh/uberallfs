@@ -1,71 +1,73 @@
 
 # Table of Contents
 
-1.  [Overview](#org9b4d031)
-    1.  [The Idea](#org67a7078)
-    2.  [Features and Goals](#org528cfb3)
-        1.  [Caching and pinning objects](#org8256118)
-        2.  [Offline use](#orgb5a5669)
-        3.  [Strong security and anonymity available](#org7030744)
-        4.  [mixed in local data](#orga81768d)
-        5.  [redundant storage](#orgc46e868)
-q        6.  [Garbage collection / Balancing](#org226bad3)
-        7.  [Striped parallel downloads](#orgdeaad2c)
-    3.  [Design Choices](#orgec4de7a)
-2.  [Components](#org6ca062c)
-    1.  [Object Store](#orga328e8d)
-    2.  [Frontends](#org6866df3)
-    3.  [Object Discovery](#org8c4e38c)
-    4.  [Object Synchronization](#org57a2dab)
-    5.  [Access Control](#org4a760d1)
-    6.  [Network / Sessions](#orgd74e01e)
-    7.  [Node Discovery](#org92951c6)
-    8.  [Key Management](#orgdce870c)
-    9.  [Distributed PKI](#org56580d3)
+1.  [Overview](#orgd0f6077)
+    1.  [The Idea](#orgfb93553)
+    2.  [Features and Goals](#orgcbc5660)
+        1.  [Caching and pinning objects](#org17ce620)
+        2.  [Offline use](#org5b69cff)
+        3.  [Strong security and anonymity available](#org87939f9)
+        4.  [mixed in private data](#orgcbe16b6)
+        5.  [redundant storage](#org6cebcf3)
+        6.  [Garbage collection / Balancing](#org1c69d2a)
+        7.  [Striped parallel downloads](#org0ad2611)
+    3.  [Design Choices](#orgaa4646f)
+2.  [Components](#orgba78ead)
+    1.  [Object Store](#org806801a)
+    2.  [Frontends](#orgcdec77a)
+    3.  [Object Discovery](#org9cfbc76)
+    4.  [Object Synchronization](#org4ee21f7)
+    5.  [Access Control](#orgc99227a)
+    6.  [Network / Sessions](#org965f4ea)
+    7.  [Node Discovery](#orgc164494)
+    8.  [Key Management](#org9590750)
+    9.  [Distributed PKI](#orge249891)
 3.  [Object Store](#bd6e60d2-31a6-46f8-87ec-173f395ef49b)
-    1.  [Identifier Types](#org5230aa4)
-        1.  [Plans](#org275d548)
-    2.  [Object Types](#org09cdcd8)
-        1.  [tree](#org590a6a9)
-        2.  [blob](#orgd8289e1)
-        3.  [perm](#orge4bfb2a)
-        4.  [meta](#org3bc7402)
-        5.  [dmap](#orged7c2cd)
-        6.  [hash](#orgfda0ff7)
-        7.  [link](#org3195eac)
-        8.  [rule](#org7b3458f)
-    3.  [Ideas](#org2a76576)
-4.  [Disk Layout](#org4e1b216)
-    1.  [objectstore](#orge3a54bb)
-    2.  [node](#org8aa6610)
-    3.  [fuse](#org3ebbdcf)
+    1.  [Identifier Types](#org4e2ae15)
+        1.  [Plans](#org762556d)
+    2.  [Object Types](#org01437fd)
+        1.  [tree](#org45de736)
+        2.  [blob](#orgc4effff)
+        3.  [part](#orgec5176e)
+    3.  [Metadata Types](#org822ae0b)
+        1.  [perm](#orga0c53f9)
+        2.  [meta](#org4571861)
+        3.  [dmap](#orgf33cacd)
+        4.  [hash](#orga8f8573)
+        5.  [link](#orgcacccab)
+        6.  [rule](#org30274c9)
+    4.  [Ideas](#org5f8e319)
+4.  [Disk Layout](#org6cbbc3d)
+    1.  [objectstore](#org17e2c4a)
+    2.  [node](#org2932388)
+    3.  [fuse](#org4a89f68)
 5.  [Access Control](#62c4e059-5538-48a1-953a-43c1c9a5d7fb)
-    1.  [Brainstorm/Ideas](#org7f01159)
-    2.  [Security Implications](#org4b32302)
-        1.  [replay attack](#org4ea95a3)
-        2.  [malicious object mutation](#orga16fb79)
-        3.  [privilege escalation](#orgbb402b2)
-        4.  [Object persistence](#org64530b7)
-    3.  [Concise Permissions](#orga72c6b1)
-        1.  [File Permissions](#org83a8487)
-        2.  [Directory Permissions](#orgb2df0fb)
+    1.  [Brainstorm/Ideas](#org3eec286)
+    2.  [Security Implications](#orgb759839)
+        1.  [replay attack](#org6b4d770)
+        2.  [malicious object mutation](#orgd7e8943)
+        3.  [privilege escalation](#org5a1a758)
+        4.  [Object persistence](#org2332ef3)
+    3.  [Concise Permissions](#org523d29b)
+        1.  [File Permissions](#org3e19ea1)
+        2.  [Directory Permissions](#org8cce863)
 6.  [The Node](#d2f3ef15-6e9a-4cae-9131-1534664ffa98)
-    1.  [Planned](#orge4facb9)
-        1.  [Realms](#org2b9aa3d)
+    1.  [Planned](#orge12fb2c)
+        1.  [Realms](#orgce1d9c8)
 7.  [HowTo](#ead96b87-abaf-43e6-89a8-111b9a8799d3)
-    1.  [Plumbing](#org59c34bc)
-        1.  [Initialize and start a new uberallfs node](#org5e3006f)
-8.  [Problems/Solutions](#org392de66)
-    1.  [Distributed object deletion](#org75d825c)
+    1.  [Plumbing vs Porcelain](#orgc13818d)
+        1.  [Initialize and start a new uberallfs node](#org7f9170c)
+8.  [Problems/Solutions](#org4b07c2b)
+    1.  [Distributed object deletion](#orga8cc0d6)
 
 
 
-<a id="org9b4d031"></a>
+<a id="orgd0f6077"></a>
 
 # Overview
 
 
-<a id="org67a7078"></a>
+<a id="orgfb93553"></a>
 
 ## The Idea
 
@@ -84,12 +86,12 @@ data. This synchronization is managed by the current token owner.
 [Look here for examples how to use it](#ead96b87-abaf-43e6-89a8-111b9a8799d3)
 
 
-<a id="org528cfb3"></a>
+<a id="orgcbc5660"></a>
 
 ## Features and Goals
 
 
-<a id="org8256118"></a>
+<a id="org17ce620"></a>
 
 ### Caching and pinning objects
 
@@ -97,7 +99,7 @@ Objects become cached upon access. There will be tools to enforce this caching a
 objects to a node.
 
 
-<a id="orgb5a5669"></a>
+<a id="org5b69cff"></a>
 
 ### Offline use
 
@@ -107,22 +109,22 @@ changes need to be merged when connectivity is restored (which can be automatic 
 are no conflicts).
 
 
-<a id="org7030744"></a>
+<a id="org87939f9"></a>
 
 ### Strong security and anonymity available
 
 Objects can be either instantiated by a 'creator' who defines security policies about who
-has access to them OR published as anonymous immutable.
+has access to them OR published as anonymous/immutable.
 
 
-<a id="orga81768d"></a>
+<a id="orgcbe16b6"></a>
 
-### mixed in local data
+### mixed in private data
 
-Objects may be local only and never be shared.
+Objects may be private only and never be shared.
 
 
-<a id="orgc46e868"></a>
+<a id="org6cebcf3"></a>
 
 ### redundant storage
 
@@ -131,7 +133,7 @@ only complete after the data is replicated or lazy backup schemes where data bec
 syncronized at lower priority without blocking current access.
 
 
-<a id="org226bad3"></a>
+<a id="org1c69d2a"></a>
 
 ### Garbage collection / Balancing
 
@@ -140,7 +142,7 @@ just a copy (that is not used for redundancy) by deleting the object or by offer
 objects to other nodes within a configured realm of hosts.
 
 
-<a id="orgdeaad2c"></a>
+<a id="org0ad2611"></a>
 
 ### Striped parallel downloads
 
@@ -148,7 +150,7 @@ If possible (later) Object transfer and syncronization can be spread over multip
 to utilize better bandwidth sharing (Bittorrent alike).
 
 
-<a id="orgec4de7a"></a>
+<a id="orgaa4646f"></a>
 
 ## Design Choices
 
@@ -162,7 +164,7 @@ testing and development, never in production. Any Version 0 Protocol outside of 
 environment is considered incompatible with itself.
 
 
-<a id="org6ca062c"></a>
+<a id="orgba78ead"></a>
 
 # Components
 
@@ -170,7 +172,7 @@ Following a coarse overview of the components making uberallfs. Details are desc
 later Chapters.
 
 
-<a id="orga328e8d"></a>
+<a id="org806801a"></a>
 
 ## Object Store
 
@@ -178,7 +180,7 @@ At the core is a object store where all filesystem objects are cached. Later sup
 volatile objects is planned to allow once used streaming data. [For Details see below](#bd6e60d2-31a6-46f8-87ec-173f395ef49b).
 
 
-<a id="org6866df3"></a>
+<a id="orgcdec77a"></a>
 
 ## Frontends
 
@@ -188,7 +190,7 @@ filesystem which maps the underlying uberallfs to an ordinary POSIX conforming f
 Later other front ends are planned. Android storage framework for example.
 
 
-<a id="org8c4e38c"></a>
+<a id="org9cfbc76"></a>
 
 ## Object Discovery
 
@@ -208,7 +210,7 @@ do so and negotiate promises and leases with the authoritative node for race fre
 access.
 
 
-<a id="org57a2dab"></a>
+<a id="org4ee21f7"></a>
 
 ## Object Synchronization
 
@@ -221,7 +223,7 @@ locations of an object happen. This is mitigated by a low priority object coales
 gather fragments and merges them on single nodes.
 
 
-<a id="org4a760d1"></a>
+<a id="orgc99227a"></a>
 
 ## Access Control
 
@@ -234,7 +236,7 @@ below). Basically any access ever granted can not be reliably revoked at a later
 [Details below.](#62c4e059-5538-48a1-953a-43c1c9a5d7fb)
 
 
-<a id="orgd74e01e"></a>
+<a id="org965f4ea"></a>
 
 ## Network / Sessions
 
@@ -246,7 +248,7 @@ unexpectedly then these states and all associated data gets cleaned up/rolled ba
 [Handled by the Node](#d2f3ef15-6e9a-4cae-9131-1534664ffa98).
 
 
-<a id="org92951c6"></a>
+<a id="orgc164494"></a>
 
 ## Node Discovery
 
@@ -255,14 +257,15 @@ are cached for fast lookup. If that fails then a discovery is initiated (Details
 worked out).
 
 
-<a id="orgdce870c"></a>
+<a id="org9590750"></a>
 
 ## Key Management
 
-creates user and node keys, manages signatures/pki
+creates user and node keys, manages signatures/pki,
+key-agent process.
 
 
-<a id="org56580d3"></a>
+<a id="orge249891"></a>
 
 ## Distributed PKI
 
@@ -303,7 +306,7 @@ Eventually (if one is careless) this could lead to directory cycles, which is th
 difference to traditional filesystems where directory cycles are highly disregarded.
 
 
-<a id="org5230aa4"></a>
+<a id="org4e2ae15"></a>
 
 ## Identifier Types
 
@@ -369,7 +372,7 @@ the hash over a bittorrent like list of hashes. This may even become the default
 immutable objects at some point.
 
 
-<a id="org275d548"></a>
+<a id="org762556d"></a>
 
 ### Plans
 
@@ -379,14 +382,14 @@ encryption would remove this requirement and allow proxying/caching on nodes tha
 don't have access to the object.
 
 
-<a id="org09cdcd8"></a>
+<a id="org01437fd"></a>
 
 ## Object Types
 
 Details explained in the next chapter.
 
 
-<a id="org590a6a9"></a>
+<a id="org45de736"></a>
 
 ### tree
 
@@ -395,28 +398,41 @@ Stores references to other objects (trees, blobs, symlinks) May store Unix speci
 be implemented.
 
 
-<a id="orgd8289e1"></a>
+<a id="orgc4effff"></a>
 
 ### blob
 
 The actual object (file) data.
+can be sparse/incomplete with not yet synchronized data.
 
 
-<a id="orge4bfb2a"></a>
+<a id="orgec5176e"></a>
+
+### part
+
+WIP: parts of blobs with own identifiers.
+
+
+<a id="org822ae0b"></a>
+
+## Metadata Types
+
+
+<a id="orga0c53f9"></a>
 
 ### perm
 
 Security manifest, access control and security related metadata.
 
 
-<a id="org3bc7402"></a>
+<a id="org4571861"></a>
 
 ### meta
 
 Extra metadata about authority/trail/generation/distribution.
 
 
-<a id="orged7c2cd"></a>
+<a id="orgf33cacd"></a>
 
 ### dmap
 
@@ -424,14 +440,14 @@ Maps to the nodes holding the data for mutable files. Initially only complete ob
 later byte ranges/multi node.
 
 
-<a id="orgfda0ff7"></a>
+<a id="orga8f8573"></a>
 
 ### hash
 
 Torrent like hash list for immutable files.
 
 
-<a id="org3195eac"></a>
+<a id="orgcacccab"></a>
 
 ### link
 
@@ -439,7 +455,7 @@ When an object type changes, its identifier changes. This .link type is then a p
 the new identifier.
 
 
-<a id="org7b3458f"></a>
+<a id="org30274c9"></a>
 
 ### rule
 
@@ -453,7 +469,7 @@ It is planned to make a simple rule engine that automates policies on objects (m
 directories). For example:
 
 
-<a id="org2a76576"></a>
+<a id="org5f8e319"></a>
 
 ## Ideas
 
@@ -463,7 +479,7 @@ Keep lazy stats (coarse granularity, infrequently written to disk, with risk of 
 -   **afreq:** average frequency of use (rolling average?)
 
 
-<a id="org4e1b216"></a>
+<a id="org6cbbc3d"></a>
 
 # Disk Layout
 
@@ -475,7 +491,7 @@ The basic use case is that all data resides in a single directory which also ser
 mountpoint for the fuse filesystem, thus shadowing they underlying data.
 
 
-<a id="orge3a54bb"></a>
+<a id="org17e2c4a"></a>
 
 ## objectstore
 
@@ -494,7 +510,7 @@ The objectstore can be freestanding/self contained no external configuration is 
 Planned: links to other objectstores on local computer, possibly on slower media for archives.
 
 
-<a id="org8aa6610"></a>
+<a id="org2932388"></a>
 
 ## node
 
@@ -503,13 +519,14 @@ The 'node' manages the data distribution between other nodes, forming a peer to 
 For that it keeps the networks addresses of other nodes and manages network related keys.
 
 -   **config/:** configuration files
+-   **nodes/??/:** information about other nodes
 -   **keystore/:** some of the keys used to operate the node. Others may be in ~/.config/uberallfs and are
     loaded on startup. Private keys will be isolated, TBD.
 -   **uberallfs.sock:** socket for local node control
 -   **node.version:** version identifier
 
 
-<a id="org3ebbdcf"></a>
+<a id="org4a89f68"></a>
 
 ## fuse
 
@@ -563,7 +580,7 @@ node is obliged to validate access rights on queries.
 TODO: creation date and expire parameters are required, shall these be signed here?
 
 
-<a id="org7f01159"></a>
+<a id="org3eec286"></a>
 
 ## Brainstorm/Ideas
 
@@ -573,12 +590,12 @@ TODO: creation date and expire parameters are required, shall these be signed he
     against DoS, needs some thinking.
 
 
-<a id="org4b32302"></a>
+<a id="orgb759839"></a>
 
 ## Security Implications
 
 
-<a id="org4ea95a3"></a>
+<a id="org6b4d770"></a>
 
 ### replay attack
 
@@ -599,24 +616,24 @@ enough they limit the time window in which such an attack can be done and constr
 necessary lifetime for signature revocations.
 
 
-<a id="orga16fb79"></a>
+<a id="orgd7e8943"></a>
 
 ### malicious object mutation
 
 Can not happen because the token will never be given to a node that won't have write access.
 
 
-<a id="orgbb402b2"></a>
+<a id="org5a1a758"></a>
 
 ### privilege escalation
 
 
-<a id="org64530b7"></a>
+<a id="org2332ef3"></a>
 
 ### Object persistence
 
 
-<a id="orga72c6b1"></a>
+<a id="org523d29b"></a>
 
 ## Concise Permissions
 
@@ -635,7 +652,7 @@ Access control is inclusive, when one could gain access because the key is liste
 respective Admin list, then one gets that permission implicitly.
 
 
-<a id="org83a8487"></a>
+<a id="org3e19ea1"></a>
 
 ### File Permissions
 
@@ -648,7 +665,7 @@ permissions. Should be self explanatory.
 -   **append:** 
 
 
-<a id="orgb2df0fb"></a>
+<a id="org8cce863"></a>
 
 ### Directory Permissions
 
@@ -656,9 +673,13 @@ permissions. Should be self explanatory.
 
 With directories things become more complicated.
 
--   **list:** Allow listing of the directory content.
+-   **list:** Allow listing of the directory filenames.
+    (purely know they exists, no object identifiers)
 -   **list-accessible:** Listing is filtered to content where one has (any) access to.
 -   **list-authoritative:** Listing is filtered to content where one has authority for.
+-   **read:** Allow listing of the directory content including object identifiers.
+-   **read-accessible:** Listing is filtered to content where one has (any) access to.
+-   **read-authoritative:** Listing is filtered to content where one has authority for.
 -   **add:** Add new objects.
 -   **add-authoritative:** Only add objects where one is authoritative for.
 -   **add-anonymous:** Add anonymous objects.
@@ -679,12 +700,12 @@ Further rules can be defined how objects are created, what extra permissions and
 # The Node
 
 
-<a id="orge4facb9"></a>
+<a id="orge12fb2c"></a>
 
 ## Planned
 
 
-<a id="org2b9aa3d"></a>
+<a id="orgce1d9c8"></a>
 
 ### Realms
 
@@ -698,15 +719,17 @@ WIP: Envisioned usage
 Examples here using defaults for most options. Defaults should always be the be safe option.
 
 
-<a id="org59c34bc"></a>
+<a id="orgc13818d"></a>
 
-## Plumbing
+## Plumbing vs Porcelain
 
-This examples are using 'plumbing' commands, later 'porcelain' will be added to make usage
-easier.
+This examples starting with 'plumbing' commands to show the steps involved to set something
+up. When applicable 'porcelain' is added next to it, in general porcelain commands simplify
+usage, but depend on some preconditions, like that the filesystem is already set up and
+mounted (unless for the setup commands).
 
 
-<a id="org5e3006f"></a>
+<a id="org7f9170c"></a>
 
 ### Initialize and start a new uberallfs node
 
@@ -716,6 +739,9 @@ easier.
         $ uberallfs node ./DIR_A init
         $ uberallfs node ./DIR_A start
         $ uberallfs fuse ./DIR_A mount
+    
+        $ uberallfs init ./DIR_A
+        $ uberallfs start ./DIR_A
     
     Will result in a uberallfs mounted on './DIR<sub>A</sub>' with a private (by default) root
     directory.
@@ -729,6 +755,10 @@ easier.
     
     This changes the type and sets up a minimal ACL to make the executing user Creator of the
     object.
+    
+    Porcelain will only work on a running (mounted) filesystem.
+    
+        $ uberallfs chtype public_mutable ./DIR_A
 
 3.  Shared Root Dir
 
@@ -744,6 +774,10 @@ easier.
         $ uberallfs node ./DIR_B export-key
         base64encodedpubkey
     
+        $ uberallfs node ./DIR_B init
+        $ uberallfs export_key ./DIR_B
+        base64encodedpubkey
+    
     -   By exported Directory
         
         Give the new user/key access to the root directory in './DIR<sub>A</sub>' and export it into an
@@ -753,11 +787,17 @@ easier.
             $ uberallfs objectstore ./DIR_A chacl +super_admin base64encodedpubkey /
             $ uberallfs objectstore ./DIR_A send --thin / >ARCHIVE
         
+            $ uberallfs chacl +super_admin base64encodedpubkey /DIR_A
+            $ uberallfs export ./DIR_A ARCHIVE
+        
         Now we can import that archive as new root directory and go on.
         
             $ uberallfs objectstore ./DIR_B init --import ARCHIVE
             $ uberallfs node ./DIR_B start
             $ uberallfs fuse ./DIR_B mount
+        
+            $ uberallfs import --root ARCHIVE ./DIR_B
+            $ uberallfs start ./DIR_B
     
     -   By URL
         
@@ -769,6 +809,9 @@ easier.
             $ uberallfs node ./DIR_A show --url /
             uberallfs://localhost:port/base64encodedidentifier
         
+            $ uberallfs show-url ./DIR_A
+            uberallfs://localhost:port/base64encodedidentifier
+        
         This URL can then be used to bootstrap the new objectstore
         
             $ uberallfs objectstore ./DIR_B init --no-root
@@ -776,14 +819,20 @@ easier.
             $ uberallfs node ./DIR_B fetch uberallfs://localhost:port/base64encodedidentifier
             $ uberallfs objectstore ./DIR_B root --set base64encodedidentifier
             $ uberallfs fuse ./DIR_B mount
+        
+        'insta' does all DWIM magic to get a uberallfs running. initialization, starting and
+        mounting the node. Possibly it asks some interactive questions (for deploying keys).
+        An existing dir will be reused if no data gets overwritten (same root again).
+        
+            $ uberallfs insta ./DIR_B --from uberallfs://localhost:port/base64encodedidentifier
 
 
-<a id="org392de66"></a>
+<a id="org4b07c2b"></a>
 
 # Problems/Solutions
 
 
-<a id="org75d825c"></a>
+<a id="orga8cc0d6"></a>
 
 ## Distributed object deletion
 

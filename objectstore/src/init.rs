@@ -4,6 +4,9 @@ use std::fs::{self, create_dir_all};
 use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
+
 #[allow(unused_imports)]
 use log::{debug, error, info, trace};
 
@@ -74,7 +77,7 @@ pub(crate) fn init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
     const URL_SAFE_ENCODE: &[u8; 64] = &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
     for a in URL_SAFE_ENCODE.iter() {
         for b in URL_SAFE_ENCODE.iter() {
-            objectstore_dir.push(format!("{}{}", *a as char, *b as char));
+            objectstore_dir.push(OsStr::from_bytes(&[*a,*b]));
             create_dir_all(&objectstore_dir)?;
             objectstore_dir.pop();
         }

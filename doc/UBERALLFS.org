@@ -32,9 +32,9 @@
    #
    # $ uberallfs insta ./uberallfs --from uberallfs://www.pipapo.org:<port>/<base64encodedidentifier>
    #
-   # root dir should only list accessible files, write only for dirs, constrained to few dir
+   # root dir should only list accessible files, write only for owned dirs, constrained to few dirs per
    # user, with expire time <2 years. Also contains some greeting files and a self hosted
-   # uberallfs git repository (docs and more)
+   # uberallfs git repository (docs and more).
 
 ** Features and Goals
 
@@ -191,86 +191,104 @@
   Eventually (if one is careless) this could lead to directory cycles, which is the major
   difference to traditional filesystems where directory cycles are highly disregarded.
 
-** Identifier Types
+** Objects
 
-   A mutable objects are identified by a unique (random) number while an immutable object is
-   identified by a hash over its content. Objects which are constrained by permissions a
-   digital signature is required to guarantee integrity (see below).
+   A Object is defined by different parts:
 
-   We can further deduce the necessity of 3 scopes where these keys are valid:
-   1. private objects that must never be shared but is accessible to the local instance
-   2. public objects that have ownership and access permissions
-   3. anonymous objects without any ownership and public access
+   - The Object Type ::
+     Defines if it is a plain file, a directory and so on (in future a few more types will be
+     supported).
 
-   This leads to following 4 types of identifiers:
+   - The Identifier ::
+     Is a global unique 264 bit number (44 base64 encoded characters). There are different
+     types of identifiers which describe how the object is handled.
 
-   |           | private | public           | anonymous |
-   |-----------+---------+------------------+-----------|
-   | mutable   | random  | random signature | ¹         |
-   | immutable | ²       | hash signature   | hash      |
+   - Data ::
+     The data of the object itself, could be a directory or file contents etc.
 
-   Note that there are 2 not supported combinations:
-   1. Anonymous mutable data would lead security problems like denial of service attacks
-   2. Having immutable private objects won't have any security implications and may be
-      supported at some point when need arises (eg. deduplication)
+   - Metadata ::
+     Depending on the object type and identifier some extra metadata will be present, some is
+     required (like ACL's for Shared objects). Maps which show which nodes hold what version
+     of the object data. Block hashes for torrent like distribution and some more.
 
-   Eventually some more Types might be supported, for example hashing could be indirect being
-   the hash over a bittorrent like list of hashes. This may even become the default for
-   immutable objects at some point.
+*** Object Types
 
-*** Plans
+**** tree
+     Stores references to other objects (trees, blobs, symlinks) May store Unix special files
+     (fifo, sockets, device nodes) initially private, eventually network transparent nodes may
+     be implemented.
 
-    Later file encryption might be added. This is not directly on topic for uberallfs as
-    objects are only distributed to nodes that are allowed to (at least) read them. File
-    encryption would remove this requirement and allow proxying/caching on nodes that which
-    don't have access to the object.
+**** blob
+     The actual object (file) data.
+     can be sparse/incomplete with not yet synchronized data.
 
-** Object Types
+**** part
+     WIP: parts of blobs with own identifiers.
 
-   Details explained in the next chapter.
+*** Identifier Types
 
-*** tree
-    Stores references to other objects (trees, blobs, symlinks) May store Unix special files
-    (fifo, sockets, device nodes) initially private, eventually network transparent nodes may
-    be implemented.
+    A mutable objects are identified by a unique (random or hash) number while an immutable
+    object is identified by a hash over its content. Objects which are constrained by
+    permissions a digital signature is required to guarantee integrity (see below).
 
-*** blob
-    The actual object (file) data.
-    can be sparse/incomplete with not yet synchronized data.
+    We can further deduce the necessity of 3 scopes where these keys are valid:
+    1. private objects that must never be shared but is accessible to the local instance
+    2. public objects that have ownership and access permissions
+    3. anonymous objects without any ownership and public access
 
-*** part
-    WIP: parts of blobs with own identifiers.
+    This leads to following 4 types of identifiers:
 
-** Metadata Types
+    |           | private | public           | anonymous |
+    |-----------+---------+------------------+-----------|
+    | mutable   | random  | random signature | ¹         |
+    | immutable | ²       | hash signature   | hash      |
 
-*** perm
-    Security manifest, access control and security related metadata.
+    Note that there are 2 not supported combinations:
+    1. Anonymous mutable data would lead security problems like denial of service attacks
+    2. Having immutable private objects won't have any security implications and may be
+       supported at some point when need arises (eg. deduplication)
 
-*** meta
-    Extra metadata about authority/trail/generation/distribution.
+    Eventually some more Types might be supported, for example hashing could be indirect being
+    the hash over a bittorrent like list of hashes. This may even become the default for
+    immutable objects at some point.
 
-*** dmap
-    Maps to the nodes holding the data for mutable files. Initially only complete objects,
-    later byte ranges/multi node.
+**** Plans
 
-*** hash
-    Torrent like hash list for immutable files.
+     Later file encryption might be added. This is not directly on topic for uberallfs as
+     objects are only distributed to nodes that are allowed to (at least) read them. File
+     encryption would remove this requirement and allow proxying/caching on nodes that which
+     don't have access to the object.
 
-*** link
+*** Metadata Types
 
-    When an object type changes, its identifier changes. This .link type is then a pointer to
-    the new identifier.
+**** perm
+     Security manifest, access control and security related metadata.
 
-*** rule
+**** meta
+     Extra metadata about authority/trail/generation/distribution.
 
-    - Size restrictions for files.
-    - Accepted filename patterns.
-    - dirs/files only.
-    - Change the properties/identifier of a file, eg. a when a '.mkv.part' file becomes
-      renamed to '.mkv' its type is changed to 'public immutable'.
+**** dmap
+     Maps to the nodes holding the data for mutable files. Initially only complete objects,
+     later byte ranges/multi node.
 
-    It is planned to make a simple rule engine that automates policies on objects (mostly
-    directories). For example:
+**** hash
+     Torrent like hash list for immutable files.
+
+**** link
+
+     When an object type changes, its identifier changes. This .link type is then a pointer to
+     the new identifier.
+
+**** rule
+
+     - Size restrictions for files.
+     - Accepted filename patterns.
+     - dirs/files only.
+     - Change the properties/identifier of a file, eg. a when a '.mkv.part' file becomes
+       renamed to '.mkv' its type is changed to 'public immutable'.
+
+     It is planned to make a simple rule engine that automates policies on objects (mostly
+     directories). For example:
 
 ** Ideas
 

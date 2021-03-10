@@ -28,6 +28,14 @@
 
    [[#ead96b87-abaf-43e6-89a8-111b9a8799d3][Look here for examples how to use it]]
 
+   # For the really impatient: set up a demo server
+   #
+   # $ uberallfs insta ./uberallfs --from uberallfs://www.pipapo.org:<port>/<base64encodedidentifier>
+   #
+   # root dir should only list accessible files, write only for dirs, constrained to few dir
+   # user, with expire time <2 years. Also contains some greeting files and a self hosted
+   # uberallfs git repository (docs and more)
+
 ** Features and Goals
 
 *** Caching and pinning objects
@@ -454,7 +462,7 @@
 
     * list ::
       Allow listing of the directory filenames.
-      (purely know they exists, no object identifiers)
+      Knowing they exist, no object identifiers.
     * list-accessible ::
       Listing is filtered to content where one has (any) access to.
     * list-authoritative ::
@@ -486,14 +494,20 @@
     * delete-anonymous ::
       Delete anonymous objects.
 
-    Further rules can be defined how objects are created, what extra permissions and keys apply (inherit from directory,..)
+    Further rules can be defined how objects are created, what extra permissions and keys
+    apply (inherit from directory,..)
+
+*** Permission inheritance
+
+    TBD: what permissions do objects inherit from the parent (dir) additionally to the ones the
+    creator set up.
 
 * The Node
   :PROPERTIES:
   :CUSTOM_ID: d2f3ef15-6e9a-4cae-9131-1534664ffa98
   :END:
 
-  
+
 ** Planned
 
 *** Realms
@@ -512,7 +526,9 @@
    This examples starting with 'plumbing' commands to show the steps involved to set something
    up. When applicable 'porcelain' is added next to it, in general porcelain commands simplify
    usage, but depend on some preconditions, like that the filesystem is already set up and
-   mounted (unless for the setup commands).
+   mounted (unless for the setup commands), contrary plumbing commands need access to the
+   objectstore or node data and may not work when these directories are hidden behind the
+   mounted filesystem.
 
 *** Initialize and start a new uberallfs node
 
@@ -530,6 +546,8 @@
      #+BEGIN_SRC
      $ uberallfs init ./DIR_A
      $ uberallfs start ./DIR_A
+     or
+     $ uberallfs insta ./DIR_A
      #+END_SRC
 
      Will result in a uberallfs mounted on './DIR_A' with a private (by default) root
@@ -593,7 +611,7 @@
 
        #+CAPTION: porcelain
        #+BEGIN_SRC
-       $ uberallfs chacl +super_admin base64encodedpubkey /DIR_A
+       $ uberallfs chacl +super_admin base64encodedpubkey ./DIR_A
        $ uberallfs export ./DIR_A ARCHIVE
        #+END_SRC
 
@@ -642,9 +660,11 @@
        $ uberallfs fuse ./DIR_B mount
        #+END_SRC
 
-       'insta' does all DWIM magic to get a uberallfs running. initialization, starting and
-       mounting the node. Possibly it asks some interactive questions (for deploying keys).
-       An existing dir will be reused if no data gets overwritten (same root again).
+       'insta' does all DWIM magic to get a uberallfs running. initialization, starting the
+       node and mounting the filesystem. It possibly asks some interactive questions (for
+       deploying keys).  An existing dir will be reused if no data gets overwritten (same root
+       again). By default an 'insta' created uberallfs is private but this can be overridden
+       by the '--from' and '--shared' flags.
 
        #+CAPTION: porcelain
        #+BEGIN_SRC
@@ -653,7 +673,6 @@
 
 
  # *** Admin Things
- # ** Porcelain
 
  #    #+BEGIN_SRC
  #    $ uberallfs init ./directory [--import <ARCIVE_OR_URL>]

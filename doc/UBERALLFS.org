@@ -8,7 +8,12 @@
 #+LATEX_HEADER: \setlist[description]{style=nextline}
 #+LATEX_HEADER: \parskip8pt
 #+LATEX_HEADER: \parindent0
-
+#+OPTIONS: toc:nil
+#+BEGIN_ABSTRACT
+This documentation is used to bootstrap uberallfs planning and implementation, it is not
+functional yet.
+#+END_ABSTRACT
+#+TOC: headlines 3
 
 * Overview
 
@@ -29,9 +34,9 @@
    [[#ead96b87-abaf-43e6-89a8-111b9a8799d3][Look here for examples how to use it]]
 
    # For the really impatient: set up a demo server
-   #
-   # $ uberallfs insta ./uberallfs --from uberallfs://www.pipapo.org:<port>/<base64encodedidentifier>
-   #
+
+   # $ uberallfs insta ./uberallfs --from uberallfs://uberall.pipapo.org:<port>/<base64encodedidentifier>
+
    # root dir should only list accessible files, write only for owned dirs, constrained to few dirs per
    # user, with expire time <2 years. Also contains some greeting files and a self hosted
    # uberallfs git repository (docs and more).

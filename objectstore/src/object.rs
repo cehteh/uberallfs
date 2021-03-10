@@ -1,37 +1,39 @@
-use std::fs::File; // placeholder for review
-pub struct AccessControl {} // placeholder for review
+use std::ffi::OsString;
+use std::io;
 
+#[repr(u8)]
 pub enum IdentifierType {
-    PrivateMutable,
-    PublicMutable(AccessControl),
-    PublicImmutable(AccessControl, File),
-    AnonymousImmutable(File),
-}
-
-pub fn numeric_id(id: &IdentifierType) -> u8 {
-    match id {
-        IdentifierType::PrivateMutable => 1,
-        IdentifierType::PublicMutable(_) => 2,
-        IdentifierType::PublicImmutable(_, _) => 3,
-        IdentifierType::AnonymousImmutable(_) => 4,
-    }
+    PrivateMutable = 1,
+    PublicMutable,
+    PublicImmutable,
+    AnonymousImmutable,
 }
 
 pub enum ObjectType {
-    Tree,
+    Tree = 1,
     Blob,
 }
 
-pub struct Object {
-    id_type: IdentifierType,
+pub struct Identifier {
     hash: [u8; 32],
+    id_type: IdentifierType,
+}
+
+pub struct Object {
+    identifier: Identifier,     // remove from here, let objectstore keep a weak hashmap<Identifier, Object>
+    object_type: ObjectType,
+    base64: Option<OsString>,
 }
 
 impl Object {
-    fn create(id_type: IdentifierType, file_type: ObjectType) -> Object {
-        Object {
-            id_type,
-            hash: [0; 32],
-        }
+    pub fn create_private_mutable(object_type: ObjectType, random: [u8; 32]) -> io::Result<Object> {
+        Ok(Object {
+            identifier: Identifier {
+                hash: random,
+                id_type: IdentifierType::PrivateMutable,
+            },
+            object_type,
+            base64: None,
+        })
     }
 }

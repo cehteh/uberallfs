@@ -21,6 +21,7 @@ macro_rules! return_other_error {
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
     //PLANNED: can this be integrated in the clap validator?
+    //   https://github.com/clap-rs/clap/discussions/2387
     // allow init when dir:
     //   - is not a symlink AND
     //     - does not exist
@@ -60,7 +61,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
 
     init(dir)?;
 
-    let objectstore = ObjectStore::open(dir)?;
+    let mut objectstore = ObjectStore::open(dir)?;
 
     let root = if let Some(c) = matches.value_of_os("ARCHIVE") {
         // imported at least for side-effects, even when no-root is given
@@ -103,6 +104,7 @@ pub(crate) fn init(dir: &Path) -> io::Result<()> {
         objectstore_dir.pop();
     }
 
+    // https://github.com/marshallpierce/rust-base64/issues/41
     const URL_SAFE_ENCODE: &[u8; 64] =
         &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
     for a in URL_SAFE_ENCODE.iter() {

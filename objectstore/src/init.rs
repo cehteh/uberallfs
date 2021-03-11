@@ -10,7 +10,6 @@ use std::os::unix::ffi::OsStrExt;
 #[allow(unused_imports)]
 use log::{debug, error, info, trace};
 
-use crate::object::{IdentifierType::*, ObjectType::*};
 use crate::objectstore::ObjectStore;
 
 macro_rules! return_other_error {
@@ -63,17 +62,22 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
 
     let mut objectstore = ObjectStore::open(dir)?;
 
-    let root = if let Some(c) = matches.value_of_os("ARCHIVE") {
-        // imported at least for side-effects, even when no-root is given
-        let root = objectstore.import(c)?;
+    use crate::object::{Create, Object, ObjectType::*};
+    let root = if let Some(archive) = matches.value_of_os("ARCHIVE") {
+        // imported for its side-effects, even when no-root is given,
+        // otherwise defines the new root
+        let root = objectstore.import(archive)?;
         if !matches.is_present("noroot") {
-            None
-        } else {
             Some(root)
+        } else {
+            None
         }
     } else {
         if !matches.is_present("noroot") {
-            Some(objectstore.create_object(PrivateMutable, Tree)?)
+            Some(Object::create(
+                Tree,
+                Create::PrivateMutable(objectstore.rng_gen()),
+            ))
         } else {
             None
         }
@@ -81,6 +85,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
 
     if let Some(root) = &root {
         objectstore.set_root(root)?;
+        // register root in hash
     };
 
     Ok(())

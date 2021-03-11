@@ -63,7 +63,7 @@ functional yet.
 *** redundant storage
     Different levels of redundancy are planned, raid1 like redundancy where sync/close calls
     only complete after the data is replicated or lazy backup schemes where data becomes
-    syncronized at lower priority without blocking current access.
+    synchronized at lower priority without blocking current access.
 
 *** Garbage collection / Balancing
     When space becomes scarce unused objects can be evicted from the cache. Either if this is
@@ -74,6 +74,9 @@ functional yet.
     If possible (later) Object transfer and syncronization can be spread over multiple peers
     to utilize better bandwidth sharing (Bittorrent alike).
 
+*** Recoverable
+    The way objects are stored in the objectstore allows easy revival even without uberallfs
+    available.
 
 ** Design Choices
    Uberallfs uses 'opinionated' Design. Protocols include a single version number which fully
@@ -368,8 +371,11 @@ functional yet.
       Public key of the Creator/expiration of this object. Can be only once used key which is
       deleted after initialization of the metadata. The expiration date here becomes part of
       the identifier. Once passed the object becomes invalid and can be purged.
+    - Key Expire ::
+    - Creation and expire parameters ::
     - Identifier Signature ::
       The Identifier is signed with the Creators key.
+
     - Object Key ::
       The Identifier and its Signature are hashed together to give the key used in the
       object store. This is not stored in the 'perm' object as it is the 'name' thereof
@@ -556,6 +562,7 @@ functional yet.
 *** Initialize and start a new uberallfs node
 
 **** With private root
+     
 
      #+CAPTION: plumbing
      #+BEGIN_SRC

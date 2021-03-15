@@ -1,18 +1,16 @@
-#![feature(maybe_uninit_array_assume_init)]
-#![feature(maybe_uninit_uninit_array)]
 use core::mem::{self, MaybeUninit};
 use std::fmt::{self, Debug};
 use base64;
 use std::io;
 
-mod rev_cursor;
-mod identifier_kind::*;
+use crate::identifier_kind::*;
+use crate::rev_cursor;
 
 // config vars in case this ever changes
 const BITS_IN_BINARY_ID: usize = 256;
 const KIND_ID_LEN: usize = 1;
 
-/*!
+/**
 Identifiers are generated from a 'IdentifierKind' descriptor and a 'IdentifierBin' hash or
 random number. They represented as 'flipbase64' strings. That is base64 encoded strings of
 size FLIPBASE64_LEN written backwards. This backwards encoding allows fair distribution within
@@ -26,13 +24,13 @@ const FLIPBASE64_LEN: usize = (BITS_IN_BINARY_ID + KIND_ID_LEN*8 + 5) / 6;
 const BASE64_AGGREGATE: usize = 4; // for valid non padded en/decoding base64 length must be a multiple of this
 
 #[derive(Debug, PartialEq, Clone)]
-struct IdentifierBin([u8; BINARY_ID_LEN]);
+pub(crate) struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 
 #[derive(Debug, PartialEq, Clone)]
-struct Flipbase64([u8; FLIPBASE64_LEN]);
+pub(crate) struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
 #[derive(Debug, PartialEq)]
-struct Identifier {
+pub(crate) struct Identifier {
     kind: IdentifierKind,
     base64: Flipbase64,
 }
@@ -69,7 +67,7 @@ impl From<&Flipbase64> for IdentifierKind {
 
 
 impl Identifier {
-    fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {
+    pub(crate) fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {
         use std::io::Write;
 
         let mut base64: [MaybeUninit<u8>; FLIPBASE64_LEN] = MaybeUninit::uninit_array();
@@ -88,26 +86,30 @@ impl Identifier {
         }
     }
 
-    fn from_flipbase64(base64: Flipbase64) -> Identifier {
+    pub(crate) fn from_flipbase64(base64: Flipbase64) -> Identifier {
         Identifier {
             kind: (&base64).into(),
             base64,
         }
     }
 
-    fn identifier_bin(&self) -> IdentifierBin {
+    pub(crate) fn id_base64(&self) -> &Flipbase64 {
+        &self.base64
+    }
+
+    pub(crate) fn id_bin(&self) -> IdentifierBin {
         (&self.base64).into()
     }
 
-    fn object_type(&self) -> ObjectType {
+    pub(crate) fn object_type(&self) -> ObjectType {
         self.kind.object_type()
     }
 
-    fn sharing_policy(&self) -> SharingPolicy {
+    pub(crate) fn sharing_policy(&self) -> SharingPolicy {
         self.kind.sharing_policy()
     }
 
-    fn mutability(&self) -> Mutability {
+    pub(crate) fn mutability(&self) -> Mutability {
         self.kind.mutability()
     }
 }

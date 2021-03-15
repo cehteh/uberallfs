@@ -6,7 +6,8 @@ use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 
-use crate::object::{IdType, Object};
+use crate::object::Object;
+use crate::identifier::IdentifierBin;
 
 pub struct ObjectStore {
     handle: Dir,
@@ -21,16 +22,16 @@ impl ObjectStore {
         })
     }
 
-    pub fn rng_gen(&mut self) -> IdType {
-        self.rng.gen()
+    pub(crate) fn rng_gen(&mut self) -> IdentifierBin {
+        IdentifierBin(self.rng.gen())
     }
 
-    pub fn import(&self, _archive: &OsStr) -> io::Result<Object> {
+    pub(crate) fn import(&self, _archive: &OsStr) -> io::Result<Object> {
         unimplemented!()
     }
 
-    pub fn set_root(&self, _root: &Object) -> io::Result<()> {
-        unimplemented!()
+    pub(crate) fn set_root(&self, _root: &Object) -> io::Result<()> {
+        Ok(()) //unimplemented!()
     }
 }
 

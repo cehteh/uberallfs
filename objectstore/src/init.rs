@@ -12,6 +12,8 @@ use log::{debug, error, info, trace};
 
 use crate::objectstore::ObjectStore;
 
+use crate::identifier_kind::*;
+
 macro_rules! return_other_error {
     ($fmt:literal, $($e:expr),*) => {
         return Err(Error::new(ErrorKind::Other, format!($fmt, $($e,)*)));
@@ -62,7 +64,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
 
     let mut objectstore = ObjectStore::open(dir)?;
 
-    use crate::object::{Create, Object, ObjectType::*};
+    use crate::object::{Create, Object};
     let root = if let Some(archive) = matches.value_of_os("ARCHIVE") {
         // imported for its side-effects, even when no-root is given,
         // otherwise defines the new root
@@ -74,10 +76,10 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
         }
     } else {
         if !matches.is_present("noroot") {
-            Some(Object::create(
-                Tree,
-                Create::PrivateMutable(objectstore.rng_gen()),
-            ))
+            Some(
+                Object::create(ObjectType::Directory, Create::PrivateMutable(objectstore.rng_gen()))
+                    .realize(&objectstore)?,
+            )
         } else {
             None
         }

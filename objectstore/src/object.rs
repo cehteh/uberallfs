@@ -1,109 +1,84 @@
 use std::ffi::OsString;
 use std::fs::File;
+use std::io;
 
-/*
-Objects come in different flavors:
+use crate::objectstore::ObjectStore;
+//use serde::{Serialize, Deserialize};
 
-  ObjectTypes:
-    File
-    Directory
-    (maybe more in future)
+use crate::identifier::{self, Identifier, IdentifierBin};
+use crate::identifier_kind::{Mutability::*, ObjectType::*, SharingPolicy::*, *};
 
-  Ownership/Security:
-    Private / not shared
-    Public / shared with Creator and ACL's
-    Anonymous / Shared without restrictions
-
-  Mutability:
-    Mutable
-    Immutable
- */
-
-pub struct Identifier {
-    identifier: IdType,
-    id_type: IdEnum,
-    base64: Option<OsString>,
-}
-
-pub type IdType = [u8; 32];
-
-#[repr(u8)]
-enum IdEnum {
-    PrivateMutable = 1,
-    PublicMutable,
-    PublicImmutable,
-    AnonymousImmutable,
-}
-
-#[repr(u8)]
-pub enum ObjectType {
-    Tree = 1,
-    Blob,
-}
-
-pub enum Create {
-    PrivateMutable(IdType),
-    PublicMutable(IdType, Creator, Acl),
+pub(crate) enum Create {
+    PrivateMutable(identifier::IdentifierBin),
+    PublicMutable(identifier::IdentifierBin, Creator, Acl),
     PublicImmutable(File, Creator, Acl),
     AnonymousImmutable(File),
 }
 
 impl Create {
-    fn get_idenum(&self) -> IdEnum {
+    fn get_kind(&self, object_type: ObjectType) -> IdentifierKind {
         match self {
-            Self::PrivateMutable(_) => IdEnum::PrivateMutable,
-            Self::PublicMutable(_, _, _) => IdEnum::PublicMutable,
-            Self::PublicImmutable(_, _, _) => IdEnum::PublicImmutable,
-            Self::AnonymousImmutable(_) => IdEnum::AnonymousImmutable,
+            Self::PrivateMutable(_) => IdentifierKind::create(object_type, Private, Mutable),
+            Self::PublicMutable(_, _, _) => IdentifierKind::create(object_type, PublicAcl, Mutable),
+            Self::PublicImmutable(_, _, _) => {
+                IdentifierKind::create(object_type, PublicAcl, Immutable)
+            }
+            Self::AnonymousImmutable(_) => {
+                IdentifierKind::create(object_type, Anonymous, Immutable)
+            }
         }
     }
 }
 
-pub struct Object {
-    identifier: Identifier, // hash key
-    object_type: ObjectType,
+pub(crate) struct Object {
+    identifier: Identifier,
     object_impl: ObjectImpl,
 }
 
 impl Object {
     pub(crate) fn create(object_type: ObjectType, create_args: Create) -> Object {
-        let id_type = create_args.get_idenum();
+        let kind = create_args.get_kind(object_type);
         match create_args {
-            Create::PrivateMutable(identifier) => Object {
-                identifier: Identifier {
-                    identifier,
-                    id_type,
-                    base64: None,
-                },
-                object_type,
-                object_impl: ObjectImpl::PrivateMutable(PrivateMutableObject),
-            },
+            Create::PrivateMutable(identifier) => {
+                PrivateMutableObject::create(Identifier::from_binary(kind, identifier))
+            }
 
-            Create::PublicMutable(identifier, creator, acl) => Object {
-                identifier: Identifier {
-                    identifier,
-                    id_type,
-                    base64: None,
-                },
-                object_type,
-                object_impl: ObjectImpl::PublicMutable(PublicMutableObject { creator, acl }),
-            },
-
+            /*
+                        Create::PublicMutable(identifier, creator, acl) => Object {
+                            identifier: Identifier {
+                                identifier,
+                                id_type,
+                                base64: None,
+                            },
+                            object_type,
+                            object_impl: ObjectImpl::PublicMutable(PublicMutableObject { creator, acl }),
+                        },
+            */
             //PublicImmutable(File, Creator, Acl),
             //AnonymousImmutable(File),
             _ => unimplemented!(),
         }
     }
-}
 
-enum ObjectImpl {
-    PrivateMutable(PrivateMutableObject),
-    PublicMutable(PublicMutableObject),
-    PublicImmutable(PublicImmutableObject),
-    AnonymousImmutable(AnonymousImmutableObject),
+    pub(crate) fn realize(self, _objectstore: &ObjectStore) -> io::Result<Object> {
+        println!(
+            "base64: {}",
+            std::str::from_utf8(&self.identifier.id_base64().0).unwrap()
+        );
+        Ok(self)
+    }
 }
 
 struct PrivateMutableObject;
+
+impl PrivateMutableObject {
+    fn create(identifier: Identifier) -> Object {
+        Object {
+            identifier,
+            object_impl: ObjectImpl::PrivateMutable(PrivateMutableObject),
+        }
+    }
+}
 
 struct PublicMutableObject {
     creator: Creator,
@@ -113,5 +88,12 @@ struct PublicMutableObject {
 struct PublicImmutableObject;
 struct AnonymousImmutableObject;
 
-pub struct Acl;
-pub struct Creator;
+enum ObjectImpl {
+    PrivateMutable(PrivateMutableObject),
+    PublicMutable(PublicMutableObject),
+    PublicImmutable(PublicImmutableObject),
+    AnonymousImmutable(AnonymousImmutableObject),
+}
+
+pub(crate) struct Acl;
+pub(crate) struct Creator;

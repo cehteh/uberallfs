@@ -40,7 +40,7 @@ pub enum Mutability {
 
 // packs the aspects from above into a byte
 #[derive(Debug, PartialEq)]
-pub struct IdentifierKind(u8);
+pub struct IdentifierKind(pub u8);
 
 impl IdentifierKind {
     pub fn create(

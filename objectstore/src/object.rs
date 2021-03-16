@@ -2,98 +2,79 @@ use std::ffi::OsString;
 use std::fs::File;
 use std::io;
 
-use crate::objectstore::ObjectStore;
+use crate::objectstore::{DirectoryPermissions, FileAttributes, FilePermissions, ObjectStore};
 //use serde::{Serialize, Deserialize};
 
-use crate::identifier::{self, Identifier, IdentifierBin};
-use crate::identifier_kind::{Mutability::*, ObjectType::*, SharingPolicy::*, *};
-
-pub(crate) enum Create {
-    PrivateMutable(identifier::IdentifierBin),
-    PublicMutable(identifier::IdentifierBin, Creator, Acl),
-    PublicImmutable(File, Creator, Acl),
-    AnonymousImmutable(File),
+pub enum Handle {
+    Dir(openat::Dir),
+    File(std::fs::File),
 }
 
-impl Create {
-    fn get_kind(&self, object_type: ObjectType) -> IdentifierKind {
-        match self {
-            Self::PrivateMutable(_) => IdentifierKind::create(object_type, Private, Mutable),
-            Self::PublicMutable(_, _, _) => IdentifierKind::create(object_type, PublicAcl, Mutable),
-            Self::PublicImmutable(_, _, _) => {
-                IdentifierKind::create(object_type, PublicAcl, Immutable)
-            }
-            Self::AnonymousImmutable(_) => {
-                IdentifierKind::create(object_type, Anonymous, Immutable)
-            }
-        }
-    }
-}
+#[derive(Debug)]
+pub struct Acl;
+#[derive(Debug)]
+pub struct Creator;
 
-pub(crate) struct Object {
-    identifier: Identifier,
-    object_impl: ObjectImpl,
+use crate::identifier::{Identifier, IdentifierBin};
+use crate::identifier_kind::*;
+
+pub struct Object {
+    pub identifier: Identifier,
+    opts: ObjectImpl,
 }
 
 impl Object {
-    pub(crate) fn create(object_type: ObjectType, create_args: Create) -> Object {
-        let kind = create_args.get_kind(object_type);
-        match create_args {
-            Create::PrivateMutable(identifier) => {
-                PrivateMutableObject::create(Identifier::from_binary(kind, identifier))
+    pub fn new(
+        object_type: ObjectType,
+        sharing_policy: SharingPolicy,
+        mutability: Mutability,
+        binary: IdentifierBin,
+    ) -> Self {
+        let kind = IdentifierKind::create(object_type, sharing_policy, mutability);
+        Object {
+            identifier: Identifier::from_binary(kind, binary),
+            opts: ObjectImpl::new(kind),
+        }
+    }
+
+    pub fn realize(mut self, objectstore: &ObjectStore) -> io::Result<Object> {
+        self.opts
+            .realize(&self.identifier, objectstore)
+            .and(Ok(self))
+    }
+}
+
+#[derive(Debug)]
+enum ObjectImpl {
+    Unimplemented,
+    PrivateMutable,
+    PublicImmutableFile {
+        creator: Option<Creator>,
+        acl: Option<Acl>,
+        //from file
+    },
+}
+
+impl ObjectImpl {
+    fn new(kind: IdentifierKind) -> ObjectImpl {
+        use crate::identifier_kind::{Mutability::*, ObjectType::*, SharingPolicy::*};
+        match kind.components() {
+            (_, Private, Mutable) => ObjectImpl::PrivateMutable,
+            (File, PublicAcl, Immutable) => ObjectImpl::PublicImmutableFile {
+                creator: None,
+                acl: None,
+            },
+            _ => ObjectImpl::Unimplemented,
+        }
+    }
+
+    fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> io::Result<()> {
+        match self {
+            ObjectImpl::PrivateMutable => {
+                objectstore.make_directory(identifier, DirectoryPermissions::new().full())
             }
 
-            /*
-                        Create::PublicMutable(identifier, creator, acl) => Object {
-                            identifier: Identifier {
-                                identifier,
-                                id_type,
-                                base64: None,
-                            },
-                            object_type,
-                            object_impl: ObjectImpl::PublicMutable(PublicMutableObject { creator, acl }),
-                        },
-            */
-            //PublicImmutable(File, Creator, Acl),
-            //AnonymousImmutable(File),
-            _ => unimplemented!(),
-        }
-    }
-
-    pub(crate) fn realize(self, _objectstore: &ObjectStore) -> io::Result<Object> {
-        println!(
-            "base64: {}",
-            std::str::from_utf8(&self.identifier.id_base64().0).unwrap()
-        );
-        Ok(self)
-    }
-}
-
-struct PrivateMutableObject;
-
-impl PrivateMutableObject {
-    fn create(identifier: Identifier) -> Object {
-        Object {
-            identifier,
-            object_impl: ObjectImpl::PrivateMutable(PrivateMutableObject),
+            _ => Err(io::Error::new(io::ErrorKind::Other, "Unimplemented")),
         }
     }
 }
-
-struct PublicMutableObject {
-    creator: Creator,
-    acl: Acl,
-}
-
-struct PublicImmutableObject;
-struct AnonymousImmutableObject;
-
-enum ObjectImpl {
-    PrivateMutable(PrivateMutableObject),
-    PublicMutable(PublicMutableObject),
-    PublicImmutable(PublicImmutableObject),
-    AnonymousImmutable(AnonymousImmutableObject),
-}
-
-pub(crate) struct Acl;
-pub(crate) struct Creator;

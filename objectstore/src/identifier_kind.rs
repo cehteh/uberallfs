@@ -4,7 +4,7 @@
 // implementation yet.
 
 #[repr(u8)] // 3 bits
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ObjectType {
     File = 0 << 5,
     Directory = 1 << 5,
@@ -17,7 +17,7 @@ pub enum ObjectType {
 }
 
 #[repr(u8)] // 3 bits
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum SharingPolicy {
     Private = 0 << 2,
     PublicAcl = 1 << 2,
@@ -30,7 +30,7 @@ pub enum SharingPolicy {
 }
 
 #[repr(u8)] // 2 bits
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Mutability {
     Mutable = 0,
     Immutable = 1,
@@ -39,7 +39,7 @@ pub enum Mutability {
 }
 
 // packs the aspects from above into a byte
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct IdentifierKind(pub u8);
 
 impl IdentifierKind {

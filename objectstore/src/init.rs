@@ -64,33 +64,37 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
 
     let mut objectstore = ObjectStore::open(dir)?;
 
-    use crate::object::{Create, Object};
-    let root = if let Some(archive) = matches.value_of_os("ARCHIVE") {
+    use crate::object::Object;
+    let maybe_root = if let Some(archive) = matches.value_of_os("ARCHIVE") {
         // imported for its side-effects, even when no-root is given,
         // otherwise defines the new root
         let root = objectstore.import(archive)?;
         if !matches.is_present("noroot") {
-            Some(root)
+            Some(Ok(root))
         } else {
             None
         }
     } else {
         if !matches.is_present("noroot") {
             Some(
-                Object::create(ObjectType::Directory, Create::PrivateMutable(objectstore.rng_gen()))
-                    .realize(&objectstore)?,
+                Object::new(
+                    ObjectType::Directory,
+                    SharingPolicy::Private,
+                    Mutability::Mutable,
+                    objectstore.rng_gen(),
+                )
+                .realize(&objectstore),
             )
         } else {
             None
         }
     };
 
-    if let Some(root) = &root {
-        objectstore.set_root(root)?;
-        // register root in hash
-    };
-
-    Ok(())
+    match maybe_root {
+        Some(Ok(root)) => objectstore.set_root(&root.identifier),
+        Some(Err(err)) => Err(err),
+        None => Ok(()),
+    }
 }
 
 pub(crate) fn init(dir: &Path) -> io::Result<()> {

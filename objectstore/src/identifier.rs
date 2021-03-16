@@ -1,6 +1,6 @@
+use base64;
 use core::mem::{self, MaybeUninit};
 use std::fmt::{self, Debug};
-use base64;
 use std::io;
 
 use crate::identifier_kind::*;
@@ -20,21 +20,20 @@ needed).
 **/
 
 const BINARY_ID_LEN: usize = (BITS_IN_BINARY_ID + 7) / 8;
-const FLIPBASE64_LEN: usize = (BITS_IN_BINARY_ID + KIND_ID_LEN*8 + 5) / 6;
+const FLIPBASE64_LEN: usize = (BITS_IN_BINARY_ID + KIND_ID_LEN * 8 + 5) / 6;
 const BASE64_AGGREGATE: usize = 4; // for valid non padded en/decoding base64 length must be a multiple of this
 
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
+pub struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 
 #[derive(Debug, PartialEq, Clone)]
-pub(crate) struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
+pub struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Identifier {
+pub struct Identifier {
     kind: IdentifierKind,
     base64: Flipbase64,
 }
-
 
 impl From<&Flipbase64> for IdentifierBin {
     fn from(base64: &Flipbase64) -> Self {
@@ -55,7 +54,8 @@ impl From<&Flipbase64> for IdentifierKind {
     fn from(base64: &Flipbase64) -> Self {
         use std::io::Read;
 
-        let mut cursor = rev_cursor::ReadCursor::from(&base64.0[FLIPBASE64_LEN-BASE64_AGGREGATE..]);
+        let mut cursor =
+            rev_cursor::ReadCursor::from(&base64.0[FLIPBASE64_LEN - BASE64_AGGREGATE..]);
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
 
         let mut kind = [0u8; 1];
@@ -64,7 +64,6 @@ impl From<&Flipbase64> for IdentifierKind {
         IdentifierKind(kind[0])
     }
 }
-
 
 impl Identifier {
     pub(crate) fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {
@@ -113,4 +112,3 @@ impl Identifier {
         self.kind.mutability()
     }
 }
-

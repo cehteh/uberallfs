@@ -5,11 +5,6 @@ use std::io;
 use crate::objectstore::{DirectoryPermissions, FileAttributes, FilePermissions, ObjectStore};
 //use serde::{Serialize, Deserialize};
 
-pub enum Handle {
-    Dir(openat::Dir),
-    File(std::fs::File),
-}
-
 #[derive(Debug)]
 pub struct Acl;
 #[derive(Debug)]
@@ -71,7 +66,7 @@ impl ObjectImpl {
     fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> io::Result<()> {
         match self {
             ObjectImpl::PrivateMutable => {
-                objectstore.make_directory(identifier, DirectoryPermissions::new().full())
+                objectstore.create_directory(identifier, DirectoryPermissions::new().full())
             }
 
             _ => Err(io::Error::new(io::ErrorKind::Other, "Unimplemented")),

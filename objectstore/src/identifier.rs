@@ -1,5 +1,7 @@
 use base64;
 use core::mem::{self, MaybeUninit};
+use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::fmt::{self, Debug};
 use std::io;
 
@@ -35,33 +37,38 @@ pub struct Identifier {
     base64: Flipbase64,
 }
 
-impl From<&Flipbase64> for IdentifierBin {
-    fn from(base64: &Flipbase64) -> Self {
-        use std::convert::TryInto;
+impl TryFrom<&Flipbase64> for IdentifierBin {
+    type Error = io::Error;
+
+    fn try_from(base64: &Flipbase64) -> io::Result<Self> {
         use std::io::Read;
 
         let mut cursor = rev_cursor::ReadCursor::from(&base64.0[..]);
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
 
-        let mut blob = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
-        decoder.read(&mut blob).unwrap();
+        let mut buffer = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
+        decoder.read(&mut buffer)?;
+        let id = buffer[1..]
+            .try_into()
+            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
 
-        IdentifierBin(blob[1..].try_into().unwrap())
+        Ok(IdentifierBin(id))
     }
 }
 
-impl From<&Flipbase64> for IdentifierKind {
-    fn from(base64: &Flipbase64) -> Self {
+impl TryFrom<&Flipbase64> for IdentifierKind {
+    type Error = io::Error;
+
+    fn try_from(base64: &Flipbase64) -> io::Result<Self> {
         use std::io::Read;
 
         let mut cursor =
             rev_cursor::ReadCursor::from(&base64.0[FLIPBASE64_LEN - BASE64_AGGREGATE..]);
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
-
         let mut kind = [0u8; 1];
-        decoder.read(&mut kind).unwrap();
+        decoder.read(&mut kind)?;
 
-        IdentifierKind(kind[0])
+        Ok(IdentifierKind(kind[0]))
     }
 }
 
@@ -75,8 +82,12 @@ impl Identifier {
             base64::URL_SAFE_NO_PAD,
         );
 
-        encoder.write(&[kind.0]).unwrap();
-        encoder.write(&binary.0).unwrap();
+        encoder
+            .write(&[kind.0])
+            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
+        encoder
+            .write(&binary.0)
+            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
         drop(encoder);
 
         Identifier {
@@ -85,11 +96,11 @@ impl Identifier {
         }
     }
 
-    pub(crate) fn from_flipbase64(base64: Flipbase64) -> Identifier {
-        Identifier {
-            kind: (&base64).into(),
+    pub(crate) fn from_flipbase64(base64: Flipbase64) -> io::Result<Identifier> {
+        Ok(Identifier {
+            kind: (&base64).try_into()?,
             base64,
-        }
+        })
     }
 
     pub(crate) fn id_base64(&self) -> &Flipbase64 {
@@ -97,7 +108,9 @@ impl Identifier {
     }
 
     pub(crate) fn id_bin(&self) -> IdentifierBin {
-        (&self.base64).into()
+        (&self.base64)
+            .try_into()
+            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() })
     }
 
     pub(crate) fn object_type(&self) -> ObjectType {

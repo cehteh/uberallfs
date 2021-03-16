@@ -61,5 +61,5 @@ fn init_logging(matches: &ArgMatches) {
     SimpleLogger::new()
         .with_level(verbosity_level)
         .init()
-        .unwrap();
+        .expect("Failed to initialize the logging System");
 }

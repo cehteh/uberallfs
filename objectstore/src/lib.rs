@@ -21,7 +21,7 @@ use log::{debug, error, info, trace};
 pub const VERSION: u16 = 0;
 
 pub fn cmd(matches: &ArgMatches) -> io::Result<()> {
-    let dir = matches.value_of_os("DIRECTORY").unwrap();
+    let dir = matches.value_of_os("DIRECTORY").expect("infallible");
 
     trace!("dir: {:?}", dir);
 

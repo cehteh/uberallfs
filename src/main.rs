@@ -2,6 +2,7 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
+use libc;
 use std::io;
 
 mod optargs;
@@ -12,7 +13,15 @@ use log::LevelFilter;
 
 use simple_logger::SimpleLogger;
 
+#[cfg(unix)]
+fn platform_init() {
+    unsafe {
+        libc::umask(libc::S_IRWXO);
+    }
+}
+
 fn main() -> io::Result<()> {
+    platform_init();
     let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)
         .subcommand(objectstore::optargs())

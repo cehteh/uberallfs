@@ -37,6 +37,16 @@ pub struct Identifier {
     base64: Flipbase64,
 }
 
+#[cfg(debug_assertions)]
+fn infallible<OkType, ErrorType: Debug>(result: Result<OkType, ErrorType>) -> OkType {
+    result.unwrap()
+}
+
+#[cfg(not(debug_assertions))]
+fn infallible<OkType, ErrorType: Debug>(result: Result<OkType, ErrorType>) -> OkType {
+    result.unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
+}
+
 impl TryFrom<&Flipbase64> for IdentifierBin {
     type Error = io::Error;
 
@@ -48,9 +58,7 @@ impl TryFrom<&Flipbase64> for IdentifierBin {
 
         let mut buffer = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
         decoder.read(&mut buffer)?;
-        let id = buffer[1..]
-            .try_into()
-            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
+        let id = infallible(buffer[1..].try_into());
 
         Ok(IdentifierBin(id))
     }
@@ -82,12 +90,8 @@ impl Identifier {
             base64::URL_SAFE_NO_PAD,
         );
 
-        encoder
-            .write(&[kind.0])
-            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
-        encoder
-            .write(&binary.0)
-            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
+        infallible(encoder.write(&[kind.0]));
+        infallible(encoder.write(&binary.0));
         drop(encoder);
 
         Identifier {
@@ -108,9 +112,7 @@ impl Identifier {
     }
 
     pub(crate) fn id_bin(&self) -> IdentifierBin {
-        (&self.base64)
-            .try_into()
-            .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() })
+        infallible((&self.base64).try_into())
     }
 
     pub(crate) fn object_type(&self) -> ObjectType {

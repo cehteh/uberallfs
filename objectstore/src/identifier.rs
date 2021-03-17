@@ -4,6 +4,7 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
 use std::io;
+use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::identifier_kind::*;
 use crate::rev_cursor;
@@ -37,15 +38,6 @@ pub struct Identifier {
     base64: Flipbase64,
 }
 
-#[cfg(debug_assertions)]
-fn infallible<OkType, ErrorType: Debug>(result: Result<OkType, ErrorType>) -> OkType {
-    result.unwrap()
-}
-
-#[cfg(not(debug_assertions))]
-fn infallible<OkType, ErrorType: Debug>(result: Result<OkType, ErrorType>) -> OkType {
-    result.unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() });
-}
 
 impl TryFrom<&Flipbase64> for IdentifierBin {
     type Error = io::Error;
@@ -58,7 +50,7 @@ impl TryFrom<&Flipbase64> for IdentifierBin {
 
         let mut buffer = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
         decoder.read(&mut buffer)?;
-        let id = infallible(buffer[1..].try_into());
+        let id = unsafe {buffer[1..].try_into().unchecked_unwrap() };
 
         Ok(IdentifierBin(id))
     }
@@ -90,8 +82,10 @@ impl Identifier {
             base64::URL_SAFE_NO_PAD,
         );
 
-        infallible(encoder.write(&[kind.0]));
-        infallible(encoder.write(&binary.0));
+        unsafe {
+            encoder.write(&[kind.0]).unchecked_unwrap();
+            encoder.write(&binary.0).unchecked_unwrap();
+        }
         drop(encoder);
 
         Identifier {
@@ -112,7 +106,7 @@ impl Identifier {
     }
 
     pub(crate) fn id_bin(&self) -> IdentifierBin {
-        infallible((&self.base64).try_into())
+        unsafe { (&self.base64).try_into().unchecked_unwrap() }
     }
 
     pub(crate) fn object_type(&self) -> ObjectType {

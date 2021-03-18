@@ -2,8 +2,9 @@
 reverse cursor over &[u8]
 */
 
-use core::mem::{self, MaybeUninit};
-use std::io;
+use crate::prelude::*;
+
+use core::mem::MaybeUninit;
 
 pub struct WriteCursor<'a> {
     array: &'a mut [MaybeUninit<u8>],

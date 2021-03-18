@@ -1,29 +1,31 @@
-#[allow(unused_imports)]
-use log::{debug, error, info, trace};
+use crate::prelude::*;
 
 use libc;
+use openat::Dir;
 use rand::prelude::*;
 use rand_core::OsRng;
 use rand_hc::Hc128Rng;
-use std::ffi::OsStr;
-use std::io;
+use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 use std::path;
-use openat::Dir;
 
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
 use crate::identifier_kind::*;
 use crate::object::Object;
 
+pub struct Meta;
+
+pub struct ParentLink<'a>(&'a Identifier, &'a OsStr);
+
 pub struct ObjectStore {
     handle: Dir,
-    objects: Dir, //Weakref to cache
+    objects: Dir,
     rng: Hc128Rng,
     //PLANNED: fd cache (drop handles when permissions get changed), MRU
 }
 
 impl ObjectStore {
-    pub(crate) fn open(dir: &path::Path) -> io::Result<ObjectStore> {
+    pub(crate) fn open(dir: &path::Path) -> Result<ObjectStore> {
         let handle = Dir::open(dir)?;
         let objects = handle.sub_dir("objects")?;
         Ok(ObjectStore {
@@ -33,21 +35,20 @@ impl ObjectStore {
         })
     }
 
-    pub(crate) fn rng_gen(&mut self) -> IdentifierBin {
+    pub(crate) fn rng_identifier(&mut self) -> IdentifierBin {
         IdentifierBin(self.rng.gen())
     }
 
-    pub(crate) fn import(&self, _archive: &OsStr) -> io::Result<Object> {
+    pub(crate) fn import(&self, _archive: &OsStr) -> Result<Object> {
         unimplemented!()
     }
 
-/*
     pub(crate) fn open_metadata(
         &self,
         identifier: &Identifier,
         metadata: Meta,
         access: FileAccess,
-    ) -> io::Result<Handle> {
+    ) -> Result<Handle> {
         unimplemented!()
     }
 
@@ -56,80 +57,101 @@ impl ObjectStore {
         identifier: &Identifier,
         metadata: Meta,
         perm: FilePermissions, // readwrite or readonly for immutable metadata
-    ) -> io::Result<Handle> {
-        access: FileAccess, -> always readwrite
+    ) -> Result<Handle> {
+        //access: FileAccess, -> always readwrite
         unimplemented!()
     }
-     */
 
-    pub(crate) fn open_file(
+    pub(crate) fn open_link(
         &self,
-        identifier: &Identifier,
+        object: ParentLink,
         access: FileAccess,
         perm: FilePermissions,
         attr: FileAttributes,
-    ) -> io::Result<Handle> {
+    ) -> Result<Handle> {
+        assert_eq!(object.0.object_type(), ObjectType::Directory);
+        unimplemented!()
+    }
+    pub(crate) fn open_file(&self, identifier: &Identifier, access: FileAccess) -> Result<Handle> {
         unimplemented!()
     }
 
     pub(crate) fn create_file(
         &self,
         identifier: &Identifier,
+        parent: Option<ParentLink>,
         access: FileAccess,
         perm: FilePermissions,
         attr: FileAttributes,
-    ) -> io::Result<Handle> {
+    ) -> Result<Handle> {
+        assert_eq!(identifier.object_type(), ObjectType::File);
         unimplemented!()
     }
 
-    /*
-    pub(crate) fn open_directory(
-        &self,
-        identifier: &Identifier,
-    ) -> io::Result<Handle::Dir> {
+    pub(crate) fn create_link(&self, identifier: &Identifier, parent: ParentLink) -> Result<()> {
+        assert_eq!(parent.0.object_type(), ObjectType::Directory);
         unimplemented!()
     }
-*/
+
+    // open dir is only for read, no access type needed
+    pub(crate) fn open_directory(&self, identifier: &Identifier) -> Result<Handle> {
+        unimplemented!()
+    }
+
     pub(crate) fn create_directory(
         &self,
         identifier: &Identifier,
+        parent: Option<ParentLink>,
         perm: DirectoryPermissions,
-    ) -> io::Result<()> {
+    ) -> Result<()> {
         assert_eq!(identifier.object_type(), ObjectType::Directory);
 
         let path = Path::new().push_identifier(identifier);
         info!("mkdir: {:?}", path.as_os_str());
-        self.objects.create_dir(path.as_os_str(), perm.get())
+
+        self.objects.create_dir(path.as_os_str(), perm.get())?;
+
+        if let Some(parent) = parent {
+            assert_eq!(parent.0.object_type(), ObjectType::Directory);
+            todo!("link to parent unchecked");
+
+            // remove object when failed
+        }
+
+        Ok(())
     }
 
-    pub(crate) fn change_access(
-        &self,
-        identifier: &Identifier,
-        access: FileAccess,
-    ) -> io::Result<()> {
+    pub(crate) fn change_access(&self, identifier: &Identifier, access: FileAccess) -> Result<()> {
         unimplemented!()
     }
 
+    pub(crate) fn change_attributes(
+        &self,
+        identifier: &Identifier,
+        attr: FileAttributes,
+    ) -> Result<()> {
+        unimplemented!()
+    }
 
-    //pub fn remove_object // move to deleted
+    //pub fn remove_object // move to deleted (w/ link)
 
     //pub fn revive_object // move from deleted
 
     //pub fn cleanup_deleted // delete expired objects
-
-    pub(crate) fn set_root(&self, identifier: &Identifier) -> io::Result<()> {
+    pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
         assert_eq!(identifier.object_type(), ObjectType::Directory);
         let path = Path::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
         self.objects.remove_file("root").ok();
-        self.objects.symlink("root", path.as_os_str())
+        unimplemented!()
+        //        self.objects.symlink("root", path.as_os_str())
+        //            .map_err(|ioerr| format!("test"),
     }
 }
 
 impl Drop for ObjectStore {
     fn drop(&mut self) {}
 }
-
 
 pub enum Handle {
     Dir(openat::Dir),
@@ -138,8 +160,6 @@ pub enum Handle {
 
 // impl Handle
 // chance_access() etc
-
-
 
 pub struct Path(path::PathBuf);
 

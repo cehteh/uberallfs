@@ -1,26 +1,18 @@
+use crate::prelude::*;
+
 use clap::ArgMatches;
-use std::ffi::OsStr;
 use std::fs::{self, create_dir_all};
-use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
+
+use std::ffi::{OsStr, OsString};
 
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace};
-
 use crate::objectstore::ObjectStore;
-
 use crate::identifier_kind::*;
 
-macro_rules! return_other_error {
-    ($fmt:literal, $($e:expr),*) => {
-        return Err(Error::new(ErrorKind::Other, format!($fmt, $($e,)*)));
-    };
-}
-
-fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
+fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
     //PLANNED: can this be integrated in the clap validator?
     //   https://github.com/clap-rs/clap/discussions/2387
     // allow init when dir:
@@ -37,25 +29,24 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> io::Result<()> {
             let mut objectstore_dir = PathBuf::from(dir);
             objectstore_dir.push("objectstore.version");
 
+            let _test = std::fs::File::open("test")?;
+
             if objectstore_dir.is_file() {
                 if !force {
-                    return_other_error!(
-                        "'{}' exists, is a objectstore, no --force given",
-                        dir.display()
-                    )
+                    return Err(Error::from(ObjectStoreError::ObjectStoreExists(dir.into())));
                 }
             } else if dir.read_dir()?.next().is_some() {
-                return_other_error!("'{}' exist and is not empty", dir.display())
+                return Err(Error::from(ObjectStoreError::ObjectStoreForeignExists(dir.into())));
             }
         } else {
-            return_other_error!("'{}' is not a directory", dir.display())
+            return Err(Error::from(ObjectStoreError::ObjectStoreNoDir(dir.into())));
         }
     }
 
     Ok(())
 }
 
-pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
+pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let dir = Path::new(dir);
 
     valid_objectstore_dir(dir, matches.is_present("force"))?;
@@ -81,7 +72,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
                     ObjectType::Directory,
                     SharingPolicy::Private,
                     Mutability::Mutable,
-                    objectstore.rng_gen(),
+                    objectstore.rng_identifier(),
                 )
                 .realize(&objectstore),
             )
@@ -97,7 +88,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> io::Result<()> {
     }
 }
 
-pub(crate) fn init(dir: &Path) -> io::Result<()> {
+pub(crate) fn init(dir: &Path) -> Result<()> {
     create_dir_all(dir)?;
 
     // initialize objectstore structure

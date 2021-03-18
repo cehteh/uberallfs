@@ -2,6 +2,9 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
+use anyhow::{Context, Result};
+use thiserror::Error;
+
 use libc;
 use std::io;
 
@@ -20,7 +23,7 @@ fn platform_init() {
     }
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<()> {
     platform_init();
     let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)

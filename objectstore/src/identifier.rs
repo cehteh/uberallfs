@@ -1,9 +1,10 @@
+use crate::prelude::*;
+
 use base64;
 use core::mem::{self, MaybeUninit};
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
-use std::io;
 use unchecked_unwrap::UncheckedUnwrap;
 
 use crate::identifier_kind::*;
@@ -40,27 +41,27 @@ pub struct Identifier {
 
 
 impl TryFrom<&Flipbase64> for IdentifierBin {
-    type Error = io::Error;
+    type Error = anyhow::Error;
 
-    fn try_from(base64: &Flipbase64) -> io::Result<Self> {
-        use std::io::Read;
+    fn try_from(base64: &Flipbase64) -> Result<Self> {
+        use io::Read;
 
         let mut cursor = rev_cursor::ReadCursor::from(&base64.0[..]);
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
 
         let mut buffer = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
         decoder.read(&mut buffer)?;
-        let id = unsafe {buffer[1..].try_into().unchecked_unwrap() };
+        let id = unsafe { buffer[1..].try_into().unchecked_unwrap() };
 
         Ok(IdentifierBin(id))
     }
 }
 
 impl TryFrom<&Flipbase64> for IdentifierKind {
-    type Error = io::Error;
+    type Error = anyhow::Error;
 
-    fn try_from(base64: &Flipbase64) -> io::Result<Self> {
-        use std::io::Read;
+    fn try_from(base64: &Flipbase64) -> Result<Self> {
+        use io::Read;
 
         let mut cursor =
             rev_cursor::ReadCursor::from(&base64.0[FLIPBASE64_LEN - BASE64_AGGREGATE..]);
@@ -74,7 +75,7 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
 
 impl Identifier {
     pub(crate) fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {
-        use std::io::Write;
+        use io::Write;
 
         let mut base64: [MaybeUninit<u8>; FLIPBASE64_LEN] = MaybeUninit::uninit_array();
         let mut encoder = base64::write::EncoderWriter::new(
@@ -94,7 +95,7 @@ impl Identifier {
         }
     }
 
-    pub(crate) fn from_flipbase64(base64: Flipbase64) -> io::Result<Identifier> {
+    pub(crate) fn from_flipbase64(base64: Flipbase64) -> Result<Identifier> {
         Ok(Identifier {
             kind: (&base64).try_into()?,
             base64,

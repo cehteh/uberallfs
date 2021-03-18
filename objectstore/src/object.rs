@@ -1,8 +1,14 @@
+use crate::prelude::*;
+
 use std::ffi::OsString;
 use std::fs::File;
-use std::io;
 
-use crate::objectstore::{DirectoryPermissions, FileAttributes, FilePermissions, ObjectStore};
+use crate::objectstore::{
+    DirectoryPermissions,
+    FileAttributes,
+    FilePermissions,
+    ObjectStore,
+};
 //use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
@@ -32,7 +38,7 @@ impl Object {
         }
     }
 
-    pub fn realize(mut self, objectstore: &ObjectStore) -> io::Result<Object> {
+    pub fn realize(mut self, objectstore: &ObjectStore) -> Result<Object> {
         self.opts
             .realize(&self.identifier, objectstore)
             .and(Ok(self))
@@ -63,13 +69,13 @@ impl ObjectImpl {
         }
     }
 
-    fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> io::Result<()> {
+    fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> Result<()> {
         match self {
             ObjectImpl::PrivateMutable => {
-                objectstore.create_directory(identifier, DirectoryPermissions::new().full())
+                objectstore.create_directory(identifier, None, DirectoryPermissions::new().full())
             }
 
-            _ => Err(io::Error::new(io::ErrorKind::Other, "Unimplemented")),
+            _ => Err(Error::from(ObjectStoreError::UnsupportedObjectType)),
         }
     }
 }

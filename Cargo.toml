@@ -12,6 +12,8 @@ simple_logger = "1.11"
 clap = "2.33"
 objectstore = { path = "objectstore" }
 libc = "0.2"
+thiserror = "1.0"
+anyhow = "1.0"
 
 
 [workspace]

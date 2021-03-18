@@ -16,9 +16,6 @@ mod object;
 mod objectstore;
 mod rev_cursor;
 
-#[allow(unused_imports)]
-use log::{debug, error, info, trace};
-
 pub const VERSION: u16 = 0;
 
 pub fn cmd(matches: &ArgMatches) -> Result<()> {

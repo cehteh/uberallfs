@@ -142,10 +142,9 @@ impl ObjectStore {
         assert_eq!(identifier.object_type(), ObjectType::Directory);
         let path = Path::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
-        self.objects.remove_file("root").ok();
-        unimplemented!()
-        //        self.objects.symlink("root", path.as_os_str())
-        //            .map_err(|ioerr| format!("test"),
+        self.objects.remove_file("root");
+        self.objects.symlink("root", path.as_os_str())
+            .with_context(|| "failed to symlink root object")
     }
 }
 

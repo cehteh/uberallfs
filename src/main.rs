@@ -2,11 +2,9 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
-use anyhow::{Context, Result};
-use thiserror::Error;
+use anyhow::Result;
 
 use libc;
-use std::io;
 
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
@@ -47,7 +45,7 @@ fn init_logging(matches: &ArgMatches) {
         verbosity_level = 0
     }
     if matches.is_present("debug") {
-        verbosity_level = 4
+        verbosity_level = 4;
     }
 
     verbosity_level += matches.occurrences_of("verbose");

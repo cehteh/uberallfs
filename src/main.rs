@@ -26,12 +26,16 @@ fn main() -> Result<()> {
     let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)
         .subcommand(objectstore::optargs())
+        .subcommand(fuse::optargs())
         .get_matches();
 
     init_logging(&matches);
 
+    //TODO: error explain function
     match matches.subcommand() {
         ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
+        ("fuse", Some(sub_m)) => fuse::cmd(sub_m),
+
         (name, _) => {
             unimplemented!("subcommand '{}'", name)
         }

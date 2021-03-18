@@ -10,18 +10,18 @@ edition = "2018"
 log = "0.4"
 simple_logger = "1.11"
 clap = "2.33"
-objectstore = { path = "objectstore" }
 libc = "0.2"
 thiserror = "1.0"
 anyhow = "1.0"
+objectstore = { path = "objectstore" }
+fuse = { path = "fuse" }
 
 
 [workspace]
 members = [
         "objectstore",
-#        "object",
+        "fuse",
 #        "node",
-#        "fuse",
 #        "accesscontrol",
 ]
 

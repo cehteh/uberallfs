@@ -7,16 +7,19 @@ use clap::ArgMatches;
 
 mod optargs;
 pub use self::optargs::optargs;
+#[macro_use]
+extern crate lazy_static;
 
 mod errors;
 mod identifier;
 mod identifier_kind;
-mod init;
 mod object;
 mod objectstore;
 mod rev_cursor;
 
-pub const VERSION: u16 = 0;
+mod init;
+
+pub const VERSION: u32 = 0;
 
 pub fn cmd(matches: &ArgMatches) -> Result<()> {
     let dir = matches.value_of_os("DIRECTORY").expect("infallible");

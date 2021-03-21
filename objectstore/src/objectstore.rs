@@ -7,7 +7,11 @@ use rand_core::OsRng;
 use rand_hc::Hc128Rng;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
-use std::path;
+use std::{fs::OpenOptions, path};
+
+use lazy_static::lazy_static;
+use regex::bytes::Regex;
+use std::convert::TryInto;
 
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
 use crate::identifier_kind::*;
@@ -15,20 +19,72 @@ use crate::object::Object;
 
 pub struct Meta;
 
-pub struct ParentLink<'a>(&'a Identifier, &'a OsStr);
-
 pub struct ObjectStore {
+    version: u32,
     handle: Dir,
     objects: Dir,
     rng: Hc128Rng,
-    //PLANNED: fd cache (drop handles when permissions get changed), MRU
+    //log: File, //TODO: logging 'dangerous' actions to be undone
+
+    // pid: dir stack for all open dir handles (cwd/parents)
+
+    //PLANNED: fd/object cache (drop handles when permissions get changed), MRU
 }
 
 impl ObjectStore {
+    fn get_version(dir: &path::Path) -> Result<u32> {
+        use std::io::{BufRead, BufReader};
+
+        let mut version_name = path::PathBuf::from(dir);
+        version_name.push("objectstore.version");
+
+        let mut version_str: String = String::new();
+
+        BufReader::new(OpenOptions::new().read(true).open(&version_name)?)
+            .read_line(&mut version_str)?;
+
+        version_str.pop();
+
+        let version = version_str.parse::<u32>()?;
+        trace!("version: {}", version);
+
+        Ok(version)
+    }
+
+    fn ensure_dir(identifier: &Identifier) -> Result<()> {
+        ensure!(
+            identifier.object_type() == ObjectType::Directory,
+            ObjectStoreError::ObjectType {
+                have: identifier.object_type(),
+                want: ObjectType::Directory
+            },
+        );
+        Ok(())
+    }
+
+    fn ensure_file(identifier: &Identifier) -> Result<()> {
+        ensure!(
+            identifier.object_type() == ObjectType::File,
+            ObjectStoreError::ObjectType {
+                have: identifier.object_type(),
+                want: ObjectType::File
+            },
+        );
+        Ok(())
+    }
+
     pub(crate) fn open(dir: &path::Path) -> Result<ObjectStore> {
+        let version = Self::get_version(dir)?;
+        ensure!(
+            version == crate::VERSION,
+            ObjectStoreError::UnsupportedObjectStore(version)
+        );
+
         let handle = Dir::open(dir)?;
         let objects = handle.sub_dir("objects")?;
+
         Ok(ObjectStore {
+            version,
             handle,
             objects,
             rng: Hc128Rng::from_rng(OsRng)?,
@@ -41,6 +97,117 @@ impl ObjectStore {
 
     pub(crate) fn import(&self, _archive: &OsStr) -> Result<Object> {
         unimplemented!()
+    }
+
+    pub(crate) fn get_root(&self) -> Result<Identifier> {
+        let root_link = self.objects.read_link("root")?;
+
+        if let Some(root_name) = root_link.file_name() {
+            trace!("root: {:?}", root_name);
+            Identifier::from_flipbase64(Flipbase64(root_name.as_bytes().try_into()?))
+        } else {
+            bail!(ObjectStoreError::ObjectStoreFatal(String::from(
+                "root directory not found"
+            )))
+        }
+    }
+
+    pub(crate) fn identifier_lookup(&self, abbrev: &OsStr) -> Result<Identifier> {
+        trace!("prefix: {:?}", abbrev);
+        match abbrev.len() {
+            len if len < 4 || len > 44 => {
+                trace!("prefix: <4");
+                bail!(ObjectStoreError::InvalidIdentifier(String::from(
+                    "abbrevitated identifiers must be between 4 to 44 characters in length",
+                )))
+            }
+            len if len == 44 => {
+                let mut path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
+                path.push(abbrev);
+
+                self.objects
+                    .metadata(path.as_path())?
+                    .is_dir()
+                    .then(|| Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?)))
+                    .unwrap_or_else(|| bail!(ObjectStoreError::ObjectStoreNoDir(abbrev.into())))
+            }
+            _ => {
+                let path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
+
+                let mut found: Option<OsString> = None;
+                for entry in self.objects.list_dir(path.as_path())? {
+                    let entry = entry?;
+                    if entry.file_name().len() == 44
+                        && entry.simple_type() == Some(openat::SimpleType::Dir)
+                    {
+                        if entry.file_name().as_bytes()[..abbrev.len()] == *abbrev.as_bytes() {
+                            if found == None {
+                                found = Some(OsString::from(entry.file_name()));
+                            } else {
+                                bail!(ObjectStoreError::IdentifierAmbiguous(abbrev.into()));
+                            }
+                        }
+                    }
+                }
+                Identifier::from_flipbase64(Flipbase64(found.unwrap().as_bytes().try_into()?))
+            }
+        }
+    }
+
+    /// Do full path lookups
+    pub(crate) fn path_lookup(&self, path: Option<&OsStr>) -> Result<Identifier> {
+        let (root, path): (Result<Identifier>, Option<&OsStr>) = match path {
+            None => {
+                // no path at all means root
+                (self.get_root(), None)
+            }
+            Some(path) => {
+                lazy_static! {
+                    static ref PATH_RE: Regex =
+                        Regex::new("^(?-u)(/{0,2})(([^/]*)/?(.*))$").unwrap();
+                }
+
+                match PATH_RE.captures(path.as_bytes()) {
+                    Some(captures) => match captures.get(1) {
+                        Some(slashes) => match slashes.as_bytes() {
+                            b"//" => {
+                                (
+                                    self.identifier_lookup(
+                                        captures
+                                            .get(3)
+                                            .and_then(move |c| {
+                                                Some(OsStr::from_bytes(&c.as_bytes()))
+                                            })
+                                            .unwrap(),
+                                    ),
+                                    captures
+                                        .get(4)
+                                        .and_then(move |c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                                )
+                            }
+                            b"/" => (
+                                self.get_root(),
+                                captures
+                                    .get(2)
+                                    .and_then(move |c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                            ),
+                            _ => {
+                                bail!(ObjectStoreError::ObjectStoreFatal(String::from(
+                                    "Paths w/o leading slash are not supported yet"
+                                )))
+                            }
+                        },
+                        None => unreachable!(), //TODO: can this happen?
+                    },
+                    None => bail!(ObjectStoreError::ObjectStoreFatal(String::from(
+                        "Invalid PATH"
+                    ))),
+                }
+            }
+        };
+
+        trace!("after: {:?} {:?}", root, path);
+        Ok(root?)
     }
 
     pub(crate) fn open_metadata(
@@ -69,9 +236,10 @@ impl ObjectStore {
         perm: FilePermissions,
         attr: FileAttributes,
     ) -> Result<Handle> {
-        assert_eq!(object.0.object_type(), ObjectType::Directory);
+        //Self::ensure_dir(object.0)?;
         unimplemented!()
     }
+
     pub(crate) fn open_file(&self, identifier: &Identifier, access: FileAccess) -> Result<Handle> {
         unimplemented!()
     }
@@ -84,17 +252,19 @@ impl ObjectStore {
         perm: FilePermissions,
         attr: FileAttributes,
     ) -> Result<Handle> {
-        assert_eq!(identifier.object_type(), ObjectType::File);
+        Self::ensure_file(identifier)?;
+        //Self::ensure_dir(object.0);
         unimplemented!()
     }
 
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: ParentLink) -> Result<()> {
-        assert_eq!(parent.0.object_type(), ObjectType::Directory);
+        Self::ensure_dir(parent.0)?;
         unimplemented!()
     }
 
     // open dir is only for read, no access type needed
     pub(crate) fn open_directory(&self, identifier: &Identifier) -> Result<Handle> {
+        Self::ensure_dir(identifier)?;
         unimplemented!()
     }
 
@@ -104,18 +274,29 @@ impl ObjectStore {
         parent: Option<ParentLink>,
         perm: DirectoryPermissions,
     ) -> Result<()> {
-        assert_eq!(identifier.object_type(), ObjectType::Directory);
-
+        Self::ensure_dir(identifier)?;
         let path = Path::new().push_identifier(identifier);
         info!("mkdir: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
 
         if let Some(parent) = parent {
-            assert_eq!(parent.0.object_type(), ObjectType::Directory);
-            todo!("link to parent unchecked");
+            Self::ensure_dir(parent.0)?;
 
-            // remove object when failed
+            let path = Path::prefix(OsStr::new(".."))
+                .push_identifier(parent.0)
+                .push(parent.1);
+            info!(
+                "link: {:?} -> {:?}",
+                path.as_os_str(),
+                identifier.id_base64().0
+            );
+
+            //self.objects
+            //    .symlink("root", path.as_os_str())
+            //    .with_context(|| "failed to symlink root object")
+
+            //TODO: remove object when failed
         }
 
         Ok(())
@@ -139,11 +320,12 @@ impl ObjectStore {
 
     //pub fn cleanup_deleted // delete expired objects
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
-        assert_eq!(identifier.object_type(), ObjectType::Directory);
+        Self::ensure_dir(identifier)?;
         let path = Path::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
         self.objects.remove_file("root");
-        self.objects.symlink("root", path.as_os_str())
+        self.objects
+            .symlink("root", path.as_os_str())
             .with_context(|| "failed to symlink root object")
     }
 }
@@ -158,7 +340,9 @@ pub enum Handle {
 }
 
 // impl Handle
-// chance_access() etc
+// change_access() etc
+
+pub struct ParentLink<'a>(&'a Identifier, &'a OsStr);
 
 pub struct Path(path::PathBuf);
 

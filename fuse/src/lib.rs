@@ -6,7 +6,7 @@ use clap::ArgMatches;
 mod optargs;
 pub use self::optargs::optargs;
 
-pub const VERSION: u16 = 0;
+pub const VERSION: u32 = 0;
 
 pub fn cmd(matches: &ArgMatches) -> Result<()> {
     let mountpoint = matches.value_of_os("MOUNTPOINT");

@@ -38,6 +38,10 @@ impl Object {
         }
     }
 
+    pub fn acl(self, _acl: Option<Acl>) -> Self {
+        self
+    }
+
     pub fn realize(mut self, objectstore: &ObjectStore) -> Result<Object> {
         self.opts
             .realize(&self.identifier, objectstore)

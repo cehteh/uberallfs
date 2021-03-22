@@ -51,28 +51,6 @@ impl ObjectStore {
         Ok(version)
     }
 
-    fn ensure_dir(identifier: &Identifier) -> Result<()> {
-        ensure!(
-            identifier.object_type() == ObjectType::Directory,
-            ObjectStoreError::ObjectType {
-                have: identifier.object_type(),
-                want: ObjectType::Directory
-            },
-        );
-        Ok(())
-    }
-
-    fn ensure_file(identifier: &Identifier) -> Result<()> {
-        ensure!(
-            identifier.object_type() == ObjectType::File,
-            ObjectStoreError::ObjectType {
-                have: identifier.object_type(),
-                want: ObjectType::File
-            },
-        );
-        Ok(())
-    }
-
     pub(crate) fn open(dir: &path::Path) -> Result<ObjectStore> {
         let version = Self::get_version(dir)?;
         ensure!(
@@ -252,19 +230,19 @@ impl ObjectStore {
         perm: FilePermissions,
         attr: FileAttributes,
     ) -> Result<Handle> {
-        Self::ensure_file(identifier)?;
+        identifier.ensure_file()?;
         //Self::ensure_dir(object.0);
         unimplemented!()
     }
 
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: ParentLink) -> Result<()> {
-        Self::ensure_dir(parent.0)?;
+        parent.0.ensure_dir()?;
         unimplemented!()
     }
 
     // open dir is only for read, no access type needed
     pub(crate) fn open_directory(&self, identifier: &Identifier) -> Result<Handle> {
-        Self::ensure_dir(identifier)?;
+        identifier.ensure_dir()?;
         unimplemented!()
     }
 
@@ -274,14 +252,14 @@ impl ObjectStore {
         parent: Option<ParentLink>,
         perm: DirectoryPermissions,
     ) -> Result<()> {
-        Self::ensure_dir(identifier)?;
+        identifier.ensure_dir()?;
         let path = Path::new().push_identifier(identifier);
         info!("mkdir: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
 
         if let Some(parent) = parent {
-            Self::ensure_dir(parent.0)?;
+            parent.0.ensure_dir()?;
 
             let path = Path::prefix(OsStr::new(".."))
                 .push_identifier(parent.0)
@@ -320,7 +298,7 @@ impl ObjectStore {
 
     //pub fn cleanup_deleted // delete expired objects
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
-        Self::ensure_dir(identifier)?;
+        identifier.ensure_dir()?;
         let path = Path::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
         self.objects.remove_file("root");

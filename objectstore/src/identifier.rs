@@ -74,6 +74,29 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
 }
 
 impl Identifier {
+
+    pub fn ensure_dir(&self) -> Result<()> {
+        ensure!(
+            self.object_type() == ObjectType::Directory,
+            ObjectStoreError::ObjectType {
+                have: self.object_type(),
+                want: ObjectType::Directory
+            },
+        );
+        Ok(())
+    }
+
+    pub fn ensure_file(&self) -> Result<()> {
+        ensure!(
+            self.object_type() == ObjectType::File,
+            ObjectStoreError::ObjectType {
+                have: self.object_type(),
+                want: ObjectType::File
+            },
+        );
+        Ok(())
+    }
+
     pub(crate) fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {
         use io::Write;
 

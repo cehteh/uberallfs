@@ -199,6 +199,10 @@ functional yet.
   Eventually (if one is careless) this could lead to directory cycles, which is the major
   difference to traditional filesystems where directory cycles are highly disregarded.
 
+  The most important difference to traditional filesystems is that Directories in uberallfs do
+  not have parents. Frontends keep track of the directory traversing to for providing the
+  parent directories.
+
 ** Objects
 
    A Object is defined by different parts:
@@ -422,6 +426,11 @@ functional yet.
    - Key revocation :: special tree object which holds revoked signatures, must be safe
      against DoS, needs some thinking.
 
+   - Serial Nonces ::
+     Rand(u128) number initially smaller than (MAX_U128-MAX_U64) they are incremented by
+     adding a rand(u32)+1. Thus the magnitude is growing and one can compare that any 'new'
+     value must be larger than the last known. This gives a (weak) protection against replay
+     attacks without leaking any info about how frequently metadata got updated.
 
 ** Security Implications
 
@@ -526,11 +535,23 @@ functional yet.
     Further rules can be defined how objects are created, what extra permissions and keys
     apply (inherit from directory,..)
 
+# brainfart: have lists: require/accept/reject as inheritance rules per file, per dir
+
 *** Permission inheritance
 
     TBD: what permissions do objects inherit from the parent (dir) additionally to the ones the
     creator set up.
 
+*** Secure Metadata
+
+    * leases ::
+      expire time for leases, default and per node pubkey.
+      leases are persistent (stored in the token trail)
+    
+    * promises ::
+      expire time for promises, default and per node pubkey.
+      promises are volatile and expire with the session.
+    
 * The Node
   :PROPERTIES:
   :CUSTOM_ID: d2f3ef15-6e9a-4cae-9131-1534664ffa98
@@ -538,6 +559,11 @@ functional yet.
 
 
 ** Planned
+
+*** Total Encryption
+    Any data send around is encrypted starting from the first bit (w/ the targets
+    pubkey). Without knowledge of the keys not even protocol information is leaked. Incoming
+    packets/connection are just dropped when they can't be decrypted.
 
 *** Realms
 
@@ -711,6 +737,22 @@ functional yet.
  #    #+END_SRC
  
 * Problems/Solutions
+
+** Symlink escapes
+
+   Since normal directory objects can be linked at any position in a filesystem tree and have
+   no implicit parent, symlinking into parents with ''/..' becomes unreliable and even
+   dangerous. For normal directory objects this becomes forbidden. The same is true for
+   absolute symlinks.
+
+   This restriction can be removed for Private directories. Important note is that such
+   directories can not be changed into PublicAcl shared directories in presence of such
+   symlinks.
+
+   Later an alternative Directory type "DirectoryWithParent" may be introduced. Such
+   Directories have some restrictions. They can only be linked to the parent defined there and
+   thus can not be root nodes where the filesystem is mounted. Symlinks with parent refs '/..'
+   are allowed to cross into these Directories.
 
 ** Distributed object deletion
 

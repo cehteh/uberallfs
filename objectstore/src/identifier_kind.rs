@@ -10,7 +10,7 @@ pub enum ObjectType {
     Directory = 1 << 5,
     _PartialFile = 2 << 5,
     _FecBlock = 3 << 5,
-    _Reserved2 = 4 << 5,
+    _DirectoryWithParent = 4 << 5,
     _Reserved3 = 5 << 5,
     _Reserved4 = 6 << 5,
     _Reserved5 = 7 << 5,

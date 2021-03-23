@@ -38,8 +38,11 @@ pub enum ObjectStoreError {
         want: identifier_kind::ObjectType,
     },
 
-    #[error("directory {0:?} not found")]
-    DirectoryNotFound(OsString),
+    #[error("can't traverse into a parent object")]
+    NoParent,
+
+    #[error("object {0:?} not found")]
+    ObjectNotFound(OsString),
 
     #[error(transparent)]
     IOError(#[from] std::io::Error),

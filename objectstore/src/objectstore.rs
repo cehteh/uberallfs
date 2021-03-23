@@ -77,7 +77,8 @@ impl ObjectStore {
         unimplemented!()
     }
 
-    pub(crate) fn get_root(&self) -> Result<Identifier> {
+    // get the root identifier
+    pub(crate) fn get_root_id(&self) -> Result<Identifier> {
         let root_link = self.objects.read_link("root")?;
 
         if let Some(root_name) = root_link.file_name() {
@@ -90,11 +91,11 @@ impl ObjectStore {
         }
     }
 
+    /// Takes a abbrevitated identifier as string and returns the full identifier object if exists
     pub(crate) fn identifier_lookup(&self, abbrev: &OsStr) -> Result<Identifier> {
         trace!("prefix: {:?}", abbrev);
         match abbrev.len() {
             len if len < 4 || len > 44 => {
-                trace!("prefix: <4");
                 bail!(ObjectStoreError::InvalidIdentifier(String::from(
                     "abbrevitated identifiers must be between 4 to 44 characters in length",
                 )))
@@ -103,11 +104,9 @@ impl ObjectStore {
                 let mut path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
                 path.push(abbrev);
 
-                self.objects
-                    .metadata(path.as_path())?
-                    .is_dir()
-                    .then(|| Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?)))
-                    .unwrap_or_else(|| bail!(ObjectStoreError::ObjectStoreNoDir(abbrev.into())))
+                self.objects.metadata(path.as_path())?;
+                //TODO: look into deleted objects / revive
+                Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?))
             }
             _ => {
                 let path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
@@ -115,9 +114,7 @@ impl ObjectStore {
                 let mut found: Option<OsString> = None;
                 for entry in self.objects.list_dir(path.as_path())? {
                     let entry = entry?;
-                    if entry.file_name().len() == 44
-                        && entry.simple_type() == Some(openat::SimpleType::Dir)
-                    {
+                    if entry.file_name().len() == 44 {
                         if entry.file_name().as_bytes()[..abbrev.len()] == *abbrev.as_bytes() {
                             if found == None {
                                 found = Some(OsString::from(entry.file_name()));
@@ -127,17 +124,38 @@ impl ObjectStore {
                         }
                     }
                 }
-                Identifier::from_flipbase64(Flipbase64(found.unwrap().as_bytes().try_into()?))
+                //TODO: look into deleted objects / revive
+
+                Identifier::from_flipbase64(Flipbase64(
+                    found
+                        .ok_or(ObjectStoreError::ObjectNotFound(abbrev.into()))?
+                        .as_bytes()
+                        .try_into()?,
+                ))
             }
         }
     }
 
+
+
+
     /// Do full path lookups
-    pub(crate) fn path_lookup(&self, path: Option<&OsStr>) -> Result<Identifier> {
+    /// Paths can start with:
+    ///  - a single slash, then path traversal starts at the root
+    ///  - double slashes, followed by an abbrevitated Identifier, then the traversal starts there
+    /// The path is traversed as much as possible, optionally storing the identifiers (parents) leading to that.
+    /// Returns the finally found identifiers and the rest of the path thats is not existant.
+    pub(crate) fn path_lookup(
+        &self,
+        path: Option<&OsStr>,
+        parents: Option<&mut Vec<Identifier>>,
+    ) -> Result<(Identifier, Option<path::PathBuf>)> {
         let (root, path): (Result<Identifier>, Option<&OsStr>) = match path {
             None => {
                 // no path at all means root
-                (self.get_root(), None)
+                //if let Some(vec) = parents {
+                //} TODO: push
+                (self.get_root_id(), None)
             }
             Some(path) => {
                 lazy_static! {
@@ -148,30 +166,27 @@ impl ObjectStore {
                 match PATH_RE.captures(path.as_bytes()) {
                     Some(captures) => match captures.get(1) {
                         Some(slashes) => match slashes.as_bytes() {
-                            b"//" => {
-                                (
-                                    self.identifier_lookup(
-                                        captures
-                                            .get(3)
-                                            .and_then(move |c| {
-                                                Some(OsStr::from_bytes(&c.as_bytes()))
-                                            })
-                                            .unwrap(),
-                                    ),
+                            b"//" => (
+                                self.identifier_lookup(
                                     captures
-                                        .get(4)
-                                        .and_then(move |c| Some(OsStr::from_bytes(&c.as_bytes()))),
-                                )
-                            }
+                                        .get(3)
+                                        .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes())))
+                                        .unwrap(),
+                                ),
+                                captures
+                                    .get(4)
+                                    .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                            ),
                             b"/" => (
-                                self.get_root(),
+                                self.get_root_id(),
                                 captures
                                     .get(2)
-                                    .and_then(move |c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                                    .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
                             ),
                             _ => {
                                 bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                                    "Paths w/o leading slash are not supported yet"
+                                    // reserved for future use
+                                    "Paths w/o leading slash are not supported"
                                 )))
                             }
                         },
@@ -184,8 +199,29 @@ impl ObjectStore {
             }
         };
 
-        trace!("after: {:?} {:?}", root, path);
-        Ok(root?)
+        trace!("root: {:?}", root);
+
+        let path = path.map(Self::normalize_path).transpose()?;
+
+        trace!("path: {:?}", path);
+
+        Ok((root?, None))
+    }
+
+    pub(crate) fn normalize_path(path: &OsStr) -> Result<OsString> {
+        let mut new_path = path::PathBuf::new();
+        for p in path::PathBuf::from(path).iter() {
+            if p != "." {
+                if p == ".." {
+                    if !new_path.pop() {
+                        bail!(ObjectStoreError::NoParent)
+                    }
+                } else {
+                    new_path.push(p);
+                }
+            }
+        };
+        Ok(new_path.into_os_string())
     }
 
     pub(crate) fn open_metadata(

@@ -7,7 +7,7 @@ use rand_core::OsRng;
 use rand_hc::Hc128Rng;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
-use std::{fs::OpenOptions, path};
+use std::{fs::OpenOptions, path::Path, path::PathBuf};
 
 use lazy_static::lazy_static;
 use regex::bytes::Regex;
@@ -103,18 +103,16 @@ impl ObjectStore {
                 )))
             }
             len if len == 44 => {
-                let mut path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
-                path.push(abbrev);
-
-                self.objects.metadata(path.as_path())?;
+                let path = OPath::from(&abbrev.as_bytes()[..2]).push(abbrev);
+                self.objects.metadata(path.as_os_str())?;
                 //TODO: look into deleted objects / revive
                 Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?))
             }
             _ => {
-                let path = path::PathBuf::from(OsStr::from_bytes(&abbrev.as_bytes()[..2]));
+                let path = OPath::from(&abbrev.as_bytes()[..2]);
 
                 let mut found: Option<OsString> = None;
-                for entry in self.objects.list_dir(path.as_path())? {
+                for entry in self.objects.list_dir(path.as_os_str())? {
                     let entry = entry?;
                     if entry.file_name().len() == 44 {
                         if entry.file_name().as_bytes()[..abbrev.len()] == *abbrev.as_bytes() {

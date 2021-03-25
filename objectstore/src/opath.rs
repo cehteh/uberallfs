@@ -9,6 +9,13 @@ use crate::identifier::Identifier;
 /// ObjectStore Path handling
 pub struct OPath(PathBuf);
 
+
+impl From<&[u8]> for OPath {
+    fn from(s: &[u8]) -> Self {
+        OPath(PathBuf::from(OsStr::from_bytes(s)))
+    }
+}
+
 impl OPath {
     pub fn new() -> Self {
         OPath(PathBuf::new())

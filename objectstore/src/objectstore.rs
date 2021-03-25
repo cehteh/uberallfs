@@ -16,6 +16,7 @@ use std::convert::TryInto;
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
 use crate::identifier_kind::*;
 use crate::object::Object;
+use crate::opath::OPath;
 
 pub struct Meta;
 
@@ -333,7 +334,7 @@ impl ObjectStore {
         parent.0.ensure_dir()?;
 
         let source = Self::sub_object_path(&parent);
-        let dest = Path::new().push_link(identifier);
+        let dest = OPath::new().push_link(identifier);
 
         trace!(
             "mkdir link: {:?} -> {:?}",
@@ -359,7 +360,7 @@ impl ObjectStore {
         perm: DirectoryPermissions,
     ) -> Result<()> {
         identifier.ensure_dir()?;
-        let path = Path::new().push_identifier(identifier);
+        let path = OPath::new().push_identifier(identifier);
         info!("create_directory: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
@@ -367,7 +368,7 @@ impl ObjectStore {
         if let Some(parent) = parent {
             parent.0.ensure_dir()?;
 
-            let path = Path::prefix(OsStr::new(".."))
+            let path = OPath::prefix(OsStr::new(".."))
                 .push_identifier(parent.0)
                 .push(parent.1);
             info!(
@@ -399,7 +400,7 @@ impl ObjectStore {
     //pub fn cleanup_deleted // delete expired objects
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
         identifier.ensure_dir()?;
-        let path = Path::new().push_identifier(identifier);
+        let path = OPath::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
         self.objects.remove_file("root");
         self.objects
@@ -421,50 +422,6 @@ pub enum Handle {
 // change_access() etc
 
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
-
-pub struct Path(path::PathBuf);
-
-impl Path {
-    pub fn new() -> Self {
-        Path(path::PathBuf::new())
-    }
-
-    pub fn prefix(prefix: &OsStr) -> Self {
-        Path(path::PathBuf::from(prefix))
-    }
-
-    pub fn push(mut self, name: &OsStr) -> Self {
-        self.0.push(name);
-        self
-    }
-
-    pub fn push_identifier(mut self, identifier: &Identifier) -> Self {
-        let bytes = identifier.id_base64().0;
-        self.0.push(OsStr::from_bytes(&bytes[..2]));
-        self.0.push(OsStr::from_bytes(&bytes));
-        self
-    }
-
-    pub fn push_link(mut self, identifier: &Identifier) -> Self {
-        self.0.push(OsStr::from_bytes(&crate::VERSION_PREFIX));
-        self.0.push(OsStr::from_bytes(&identifier.id_base64().0));
-        self
-    }
-
-    pub fn set_file_name(mut self, name: &OsStr) -> Self {
-        self.0.set_file_name(name);
-        self
-    }
-
-    pub fn set_extension(mut self, ext: &OsStr) -> Self {
-        self.0.set_extension(ext);
-        self
-    }
-
-    pub fn as_os_str(&self) -> &OsStr {
-        self.0.as_os_str()
-    }
-}
 
 /*
 These are permissions/access flages of the objects in the objectstore, abstrated from host

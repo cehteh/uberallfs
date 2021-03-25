@@ -15,6 +15,7 @@ mod identifier;
 mod identifier_kind;
 mod object;
 mod objectstore;
+mod opath;
 mod rev_cursor;
 
 mod init;

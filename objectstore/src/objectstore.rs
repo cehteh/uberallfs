@@ -14,7 +14,6 @@ use regex::bytes::Regex;
 use std::convert::TryInto;
 
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
-use crate::identifier_kind::*;
 use crate::object::Object;
 use crate::opath::OPath;
 

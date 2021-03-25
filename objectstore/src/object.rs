@@ -1,12 +1,8 @@
 use crate::prelude::*;
 
-use std::ffi::OsString;
-use std::fs::File;
 
 use crate::objectstore::{
     DirectoryPermissions,
-    FileAttributes,
-    FilePermissions,
     ObjectStore,
 };
 //use serde::{Serialize, Deserialize};
@@ -42,7 +38,7 @@ impl Object {
         self
     }
 
-    pub fn realize(mut self, objectstore: &ObjectStore) -> Result<Object> {
+    pub fn realize(self, objectstore: &ObjectStore) -> Result<Object> {
         self.opts
             .realize(&self.identifier, objectstore)
             .and(Ok(self))

@@ -7,7 +7,6 @@ use clap::ArgMatches;
 
 mod optargs;
 pub use self::optargs::optargs;
-#[macro_use]
 extern crate lazy_static;
 
 mod errors;

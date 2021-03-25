@@ -11,8 +11,7 @@ use crate::objectstore::{ObjectStore, SubObject};
 use crate::opath::OPath;
 
 pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let dir = Path::new(dir);
-    let mut objectstore = ObjectStore::open(dir)?;
+    let mut objectstore = ObjectStore::open(Path::new(dir))?;
 
     let mut sharing_policy = SharingPolicy::Private;
 

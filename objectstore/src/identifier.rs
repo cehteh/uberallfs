@@ -3,7 +3,7 @@ use std::os::unix::ffi::OsStrExt;
 use crate::prelude::*;
 
 use base64;
-use core::mem::{self, MaybeUninit};
+use core::mem::MaybeUninit;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
@@ -47,7 +47,6 @@ impl fmt::Debug for Identifier {
          .field("kind", &self.kind.components())
          .field("base64", &OsStr::from_bytes(&self.base64.0[..]))
          .finish()
-
     }
 }
 

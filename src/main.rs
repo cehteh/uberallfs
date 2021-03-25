@@ -17,6 +17,7 @@ use simple_logger::SimpleLogger;
 #[cfg(unix)]
 fn platform_init() {
     unsafe {
+        // no 'other' access
         libc::umask(libc::S_IRWXO);
     }
 }

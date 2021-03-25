@@ -11,8 +11,8 @@ pub enum ObjectStoreError {
     #[error("fatal objectstore error {0}")]
     ObjectStoreFatal(String),
 
-    #[error("conflicting arguments: {0}")]
-    OptArgConflict(String), //TODO: OptArgError
+    #[error("Argument error: {0}")]
+    OptArgError(String),
 
     #[error("Invalid identifier: {0}")]
     InvalidIdentifier(String),
@@ -40,6 +40,9 @@ pub enum ObjectStoreError {
 
     #[error("can't traverse into a parent object")]
     NoParent,
+
+    #[error("Object exists already")]
+    ObjectExists,
 
     #[error("object {0:?} not found")]
     ObjectNotFound(OsString),

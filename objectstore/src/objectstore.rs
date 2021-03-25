@@ -148,12 +148,12 @@ impl ObjectStore {
         path: Option<&OsStr>,
         parents: Option<&mut Vec<Identifier>>,
     ) -> Result<(Identifier, Option<path::PathBuf>)> {
-        let (root, path): (Result<Identifier>, Option<&OsStr>) = match path {
+        let (root, path): (Identifier, Option<&OsStr>) = match path {
             None => {
                 // no path at all means root
                 //if let Some(vec) = parents {
                 //} TODO: push
-                (self.get_root_id(), None)
+                (self.get_root_id()?, None)
             }
             Some(path) => {
                 lazy_static! {
@@ -170,13 +170,13 @@ impl ObjectStore {
                                         .get(3)
                                         .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes())))
                                         .unwrap(),
-                                ),
+                                )?,
                                 captures
                                     .get(4)
                                     .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
                             ),
                             b"/" => (
-                                self.get_root_id(),
+                                self.get_root_id()?,
                                 captures
                                     .get(2)
                                     .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
@@ -197,15 +197,74 @@ impl ObjectStore {
             }
         };
 
-        trace!("root: {:?}", root);
-
-        let path = path.map(Self::normalize_path).transpose()?;
-
-        trace!("path: {:?}", path);
-
-        Ok((root?, None))
+        path.map(Self::normalize_path)
+            .transpose()?
+            .map(|p| Self::traverse_path(self, root, p))
+            .transpose()?
+            .ok_or(anyhow::anyhow!(ObjectStoreError::OptArgError(
+                String::from("no PATH given")
+            )))
     }
 
+    pub(crate) fn traverse_path(
+        &self,
+        mut root: Identifier,
+        path: OsString,
+    ) -> Result<(Identifier, Option<path::PathBuf>)> {
+        trace!("traverse: {:?}", &path);
+        let pb = path::PathBuf::from(path);
+        let mut pb_out = path::PathBuf::new();
+        let mut i = pb.iter();
+
+        let mut still_going = true;
+        while let Some(p) = i.next() {
+            trace!("traverse: {:?}", &p);
+            let subobject = SubObject(&root, p);
+            if still_going {
+                match self.sub_object_id(&subobject) {
+                    Ok(r) => {
+                        trace!("subobject: ok {:?}", &r);
+                        root = r;
+                    }
+                    x => {
+                        trace!("subobject: fail {:?}", &x);
+
+                        still_going = false;
+                        pb_out.push(p);
+                    }
+                }
+            } else {
+                pb_out.push(p);
+            }
+        }
+
+        Ok((root, Some(pb_out)))
+    }
+
+    //PLANNED: pub(crate) fn object_path(identifier: &Identifier) -> OsString {
+
+    pub(crate) fn sub_object_path(sub_object: &SubObject) -> OsString {
+        //FIXME: use Path
+        let mut path = path::PathBuf::from(OsStr::from_bytes(&sub_object.0.id_base64().0[..2]));
+        path.push(OsStr::from_bytes(&sub_object.0.id_base64().0));
+        path.push(&sub_object.1);
+
+        path.into_os_string()
+    }
+
+    pub(crate) fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
+        sub_object.0.ensure_dir()?;
+
+        let r = self
+            .objects
+            .read_link(&*Self::sub_object_path(sub_object))?;
+
+        Identifier::from_flipbase64(Flipbase64(
+            r.as_os_str().as_bytes()[crate::VERSION_PREFIX.len()..].try_into()?,
+        ))
+    }
+
+    /// normalize a path by removing all current dir ('.') and parent dir ('*/..') references.
     pub(crate) fn normalize_path(path: &OsStr) -> Result<OsString> {
         let mut new_path = path::PathBuf::new();
         for p in path::PathBuf::from(path).iter() {
@@ -244,7 +303,7 @@ impl ObjectStore {
 
     pub(crate) fn open_link(
         &self,
-        object: ParentLink,
+        object: SubObject,
         access: FileAccess,
         perm: FilePermissions,
         attr: FileAttributes,
@@ -260,7 +319,7 @@ impl ObjectStore {
     pub(crate) fn create_file(
         &self,
         identifier: &Identifier,
-        parent: Option<ParentLink>,
+        parent: Option<SubObject>,
         access: FileAccess,
         perm: FilePermissions,
         attr: FileAttributes,
@@ -270,9 +329,21 @@ impl ObjectStore {
         unimplemented!()
     }
 
-    pub(crate) fn create_link(&self, identifier: &Identifier, parent: ParentLink) -> Result<()> {
+    pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;
-        unimplemented!()
+
+        let source = Self::sub_object_path(&parent);
+        let dest = Path::new().push_link(identifier);
+
+        trace!(
+            "mkdir link: {:?} -> {:?}",
+            source.as_os_str(),
+            dest.as_os_str()
+        );
+
+        self.objects
+            .symlink(source.as_os_str(), dest.as_os_str())
+            .with_context(|| "failed to symlink new dir")
     }
 
     // open dir is only for read, no access type needed
@@ -284,12 +355,12 @@ impl ObjectStore {
     pub(crate) fn create_directory(
         &self,
         identifier: &Identifier,
-        parent: Option<ParentLink>,
+        parent: Option<SubObject>,
         perm: DirectoryPermissions,
     ) -> Result<()> {
         identifier.ensure_dir()?;
         let path = Path::new().push_identifier(identifier);
-        info!("mkdir: {:?}", path.as_os_str());
+        info!("create_directory: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
 
@@ -349,7 +420,7 @@ pub enum Handle {
 // impl Handle
 // change_access() etc
 
-pub struct ParentLink<'a>(&'a Identifier, &'a OsStr);
+pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
 
 pub struct Path(path::PathBuf);
 
@@ -371,6 +442,12 @@ impl Path {
         let bytes = identifier.id_base64().0;
         self.0.push(OsStr::from_bytes(&bytes[..2]));
         self.0.push(OsStr::from_bytes(&bytes));
+        self
+    }
+
+    pub fn push_link(mut self, identifier: &Identifier) -> Self {
+        self.0.push(OsStr::from_bytes(&crate::VERSION_PREFIX));
+        self.0.push(OsStr::from_bytes(&identifier.id_base64().0));
         self
     }
 

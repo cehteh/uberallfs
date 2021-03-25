@@ -10,6 +10,7 @@ pub fn optargs() -> App<'static, 'static> {
         )
         .setting(AppSettings::SubcommandRequired)
         .subcommand(init_optargs())
+        .subcommand(mkdir_optargs())
         .subcommand(send_optargs())
         .subcommand(receive_optargs())
         .subcommand(getid_optargs())
@@ -36,6 +37,47 @@ fn init_optargs() -> App<'static, 'static> {
                 .long("import")
                 .takes_value(true)
                 .help("Import root directory"),
+        )
+}
+
+fn mkdir_optargs() -> App<'static, 'static> {
+    SubCommand::with_name("mkdir")
+        .about("Create a new directory")
+        .arg(
+            Arg::with_name("root")
+                .long("force-root")
+                .help("Creates a new root directory (dangerous!)"),
+        )
+        .arg(
+            Arg::with_name("unlinked")
+                .long("force")
+                .short("f")
+                .help("Creates a new directory object PATH is given"),
+        )
+        .arg(
+            Arg::with_name("parents")
+                .long("parents")
+                .short("p")
+                .help("make parent directories as needed"),
+        )
+        .arg(
+            Arg::with_name("acl")
+                .long("acl")
+                .multiple(true)
+                .takes_value(true) // optional? from parent? 'default'
+                .help("Create a public shared directory"),
+        )
+        .arg(
+            Arg::with_name("SOURCE")
+                .long("link")
+                .short("l")
+                .takes_value(true)
+                .help("Links to an existing directory"),
+        )
+        .arg(
+            Arg::with_name("PATH")
+                .takes_value(true)
+                .help("The directory to create"),
         )
 }
 

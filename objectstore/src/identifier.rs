@@ -1,3 +1,5 @@
+use std::ffi::OsStr;
+use std::os::unix::ffi::OsStrExt;
 use crate::prelude::*;
 
 use base64;
@@ -33,12 +35,21 @@ pub struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 #[derive(Debug, PartialEq, Clone)]
 pub struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub struct Identifier {
     kind: IdentifierKind,
     base64: Flipbase64,
 }
 
+impl fmt::Debug for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.debug_struct("Identifier")
+         .field("kind", &self.kind.components())
+         .field("base64", &OsStr::from_bytes(&self.base64.0[..]))
+         .finish()
+
+    }
+}
 
 impl TryFrom<&Flipbase64> for IdentifierBin {
     type Error = anyhow::Error;

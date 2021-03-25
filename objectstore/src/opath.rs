@@ -9,6 +9,7 @@ use std::path::{Components, Iter, PathBuf};
 use crate::identifier::Identifier;
 
 /// ObjectStore Path handling
+#[derive(PartialEq)]
 pub struct OPath(PathBuf);
 
 impl From<&OsStr> for OPath {

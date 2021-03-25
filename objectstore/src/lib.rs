@@ -20,6 +20,7 @@ mod rev_cursor;
 
 mod init;
 mod mkdir;
+mod show;
 
 /// Objectstore version
 pub const VERSION: u32 = 0;
@@ -35,6 +36,7 @@ pub fn cmd(matches: &ArgMatches) -> Result<()> {
     match matches.subcommand() {
         ("init", Some(sub_m)) => init::opt_init(dir, sub_m),
         ("mkdir", Some(sub_m)) => mkdir::opt_mkdir(dir, sub_m),
+        ("show", Some(sub_m)) => show::opt_show(dir, sub_m),
         (name, _) => {
             unimplemented!("subcommand '{}'", name)
         }

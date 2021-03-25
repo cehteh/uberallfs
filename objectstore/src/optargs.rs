@@ -11,6 +11,7 @@ pub fn optargs() -> App<'static, 'static> {
         .setting(AppSettings::SubcommandRequired)
         .subcommand(init_optargs())
         .subcommand(mkdir_optargs())
+        .subcommand(show_optargs())
         .subcommand(send_optargs())
         .subcommand(receive_optargs())
         .subcommand(getid_optargs())
@@ -78,6 +79,16 @@ fn mkdir_optargs() -> App<'static, 'static> {
             Arg::with_name("PATH")
                 .takes_value(true)
                 .help("The directory to create"),
+        )
+}
+
+fn show_optargs() -> App<'static, 'static> {
+    SubCommand::with_name("show")
+        .about("Shows metadata about objects")
+        .arg(
+            Arg::with_name("PATH")
+                .takes_value(true)
+                .help("Path to investigate"),
         )
 }
 

@@ -26,9 +26,10 @@ pub struct ObjectStore {
     rng: Hc128Rng,
     //log: File, //TODO: logging 'dangerous' actions to be undone
 
-    // pid: dir stack for all open dir handles (cwd/parents)
+    //PLANNED: pid: dir stack for all open dir handles (cwd/parents)
 
     //PLANNED: fd/object cache (drop handles when permissions get changed), MRU
+    //PLANNED: identifier hash
 }
 
 impl ObjectStore {
@@ -136,9 +137,6 @@ impl ObjectStore {
         }
     }
 
-
-
-
     /// Do full path lookups
     /// Paths can start with:
     ///  - a single slash, then path traversal starts at the root
@@ -221,6 +219,7 @@ impl ObjectStore {
                 }
             }
         };
+
         Ok(new_path.into_os_string())
     }
 
@@ -305,12 +304,6 @@ impl ObjectStore {
                 path.as_os_str(),
                 identifier.id_base64().0
             );
-
-            //self.objects
-            //    .symlink("root", path.as_os_str())
-            //    .with_context(|| "failed to symlink root object")
-
-            //TODO: remove object when failed
         }
 
         Ok(())

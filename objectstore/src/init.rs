@@ -29,8 +29,6 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
             let mut objectstore_dir = PathBuf::from(dir);
             objectstore_dir.push("objectstore.version");
 
-            let _test = std::fs::File::open("test")?;
-
             if objectstore_dir.is_file() {
                 if !force {
                     return Err(Error::from(ObjectStoreError::ObjectStoreExists(dir.into())));
@@ -111,6 +109,7 @@ pub(crate) fn init(dir: &Path) -> Result<()> {
         &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
     for a in URL_SAFE_ENCODE.iter() {
         for b in URL_SAFE_ENCODE.iter() {
+            //PLANNED: objects/delete/ab/
             objectstore_dir.push(OsStr::from_bytes(&[*a, *b]));
             create_dir_all(&objectstore_dir)?;
             objectstore_dir.pop();

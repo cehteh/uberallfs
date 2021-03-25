@@ -1,18 +1,31 @@
 use crate::prelude::*;
 
-use std::path::PathBuf;
 use std::ffi::OsStr;
-#[cfg(unix)] use std::os::unix::ffi::OsStrExt;
+use std::fmt;
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
+use std::path::{Components, Iter, PathBuf};
 
 use crate::identifier::Identifier;
 
 /// ObjectStore Path handling
 pub struct OPath(PathBuf);
 
+impl From<&OsStr> for OPath {
+    fn from(ostr: &OsStr) -> Self {
+        OPath(PathBuf::from(ostr))
+    }
+}
 
 impl From<&[u8]> for OPath {
     fn from(s: &[u8]) -> Self {
         OPath(PathBuf::from(OsStr::from_bytes(s)))
+    }
+}
+
+impl fmt::Debug for OPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_fmt(format_args!("{:?}", self.as_os_str()))
     }
 }
 
@@ -28,6 +41,24 @@ impl OPath {
     pub fn push(mut self, name: &OsStr) -> Self {
         self.0.push(name);
         self
+    }
+
+    /// normalize a path by removing all current dir ('.') and parent dir ('*/..') references.
+    pub fn normalize(self) -> Result<Self> {
+        let mut new_path = PathBuf::new();
+        for p in PathBuf::from(self.0).iter() {
+            if p != "." {
+                if p == ".." {
+                    if !new_path.pop() {
+                        bail!(ObjectStoreError::NoParent)
+                    }
+                } else {
+                    new_path.push(p);
+                }
+            }
+        }
+
+        Ok(OPath(PathBuf::from(new_path)))
     }
 
     //TODO: push subobject
@@ -56,5 +87,17 @@ impl OPath {
 
     pub fn as_os_str(&self) -> &OsStr {
         self.0.as_os_str()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.as_os_str().as_bytes()
+    }
+
+    pub fn components(&self) -> Components {
+        self.0.components()
+    }
+
+    pub fn iter(&self) -> Iter {
+        self.0.iter()
     }
 }

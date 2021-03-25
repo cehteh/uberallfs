@@ -1,18 +1,14 @@
 use crate::prelude::*;
 
 use clap::ArgMatches;
-use std::fs::{self, create_dir_all};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 
-#[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;
-
-use crate::identifier::IdentifierBin;
 use crate::identifier_kind::*;
 use crate::object::Object;
 use crate::objectstore::{ObjectStore, SubObject};
+use crate::opath::OPath;
 
 pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let dir = Path::new(dir);
@@ -27,13 +23,18 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         None
     };
 
-    let (src, remaining) = objectstore.path_lookup(matches.value_of_os("PATH"), None)?;
+    let (src, remaining) = objectstore.path_lookup(
+        matches
+            .value_of_os("PATH")
+            .and_then(|f| Some(OPath::prefix(f))),
+        None,
+    )?;
     src.ensure_dir()?;
 
     if let Some(names) = remaining {
         trace!("mkdir src: {:?}/{:?}", src, names.as_os_str());
 
-        if names.components().count() == 0 {
+        if names.components().next() == None {
             bail!(ObjectStoreError::ObjectExists)
         }
         assert_eq!(names.components().count(), 1, "TODO: parent dir handling");

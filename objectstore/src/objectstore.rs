@@ -144,10 +144,10 @@ impl ObjectStore {
     /// Returns the finally found identifiers and the rest of the path thats is not existant.
     pub(crate) fn path_lookup(
         &self,
-        path: Option<&OsStr>,
+        path: Option<OPath>,
         parents: Option<&mut Vec<Identifier>>,
-    ) -> Result<(Identifier, Option<path::PathBuf>)> {
-        let (root, path): (Identifier, Option<&OsStr>) = match path {
+    ) -> Result<(Identifier, Option<OPath>)> {
+        let (root, path) = match path {
             None => {
                 // no path at all means root
                 //if let Some(vec) = parents {
@@ -167,18 +167,18 @@ impl ObjectStore {
                                 self.identifier_lookup(
                                     captures
                                         .get(3)
-                                        .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes())))
+                                        .and_then(|c| Some(OsStr::from_bytes(c.as_bytes())))
                                         .unwrap(),
                                 )?,
                                 captures
                                     .get(4)
-                                    .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                                    .and_then(|c| Some(OPath::from(c.as_bytes()))),
                             ),
                             b"/" => (
                                 self.get_root_id()?,
                                 captures
                                     .get(2)
-                                    .and_then(|c| Some(OsStr::from_bytes(&c.as_bytes()))),
+                                    .and_then(|c| Some(OPath::from(c.as_bytes()))),
                             ),
                             _ => {
                                 bail!(ObjectStoreError::ObjectStoreFatal(String::from(
@@ -196,7 +196,7 @@ impl ObjectStore {
             }
         };
 
-        path.map(Self::normalize_path)
+        path.map(OPath::normalize)
             .transpose()?
             .map(|p| Self::traverse_path(self, root, p))
             .transpose()?
@@ -208,16 +208,16 @@ impl ObjectStore {
     pub(crate) fn traverse_path(
         &self,
         mut root: Identifier,
-        path: OsString,
-    ) -> Result<(Identifier, Option<path::PathBuf>)> {
+        path: OPath,
+    ) -> Result<(Identifier, Option<OPath>)> {
         trace!("traverse: {:?}", &path);
-        let pb = path::PathBuf::from(path);
-        let mut pb_out = path::PathBuf::new();
-        let mut i = pb.iter();
+
+        let mut out = OPath::new();
+        let mut i = path.iter();
 
         let mut still_going = true;
         while let Some(p) = i.next() {
-            trace!("traverse: {:?}", &p);
+            trace!("traverse element: {:?}", &p);
             let subobject = SubObject(&root, p);
             if still_going {
                 match self.sub_object_id(&subobject) {
@@ -229,22 +229,22 @@ impl ObjectStore {
                         trace!("subobject: fail {:?}", &x);
 
                         still_going = false;
-                        pb_out.push(p);
+                        out = out.push(p);
                     }
                 }
             } else {
-                pb_out.push(p);
+                out = out.push(p);
             }
         }
 
-        Ok((root, Some(pb_out)))
+        Ok((root, Some(out)))
     }
 
     //PLANNED: pub(crate) fn object_path(identifier: &Identifier) -> OsString {
 
     pub(crate) fn sub_object_path(sub_object: &SubObject) -> OsString {
         //FIXME: use Path
-        let mut path = path::PathBuf::from(OsStr::from_bytes(&sub_object.0.id_base64().0[..2]));
+        let mut path = PathBuf::from(OsStr::from_bytes(&sub_object.0.id_base64().0[..2]));
         path.push(OsStr::from_bytes(&sub_object.0.id_base64().0));
         path.push(&sub_object.1);
 
@@ -261,24 +261,6 @@ impl ObjectStore {
         Identifier::from_flipbase64(Flipbase64(
             r.as_os_str().as_bytes()[crate::VERSION_PREFIX.len()..].try_into()?,
         ))
-    }
-
-    /// normalize a path by removing all current dir ('.') and parent dir ('*/..') references.
-    pub(crate) fn normalize_path(path: &OsStr) -> Result<OsString> {
-        let mut new_path = path::PathBuf::new();
-        for p in path::PathBuf::from(path).iter() {
-            if p != "." {
-                if p == ".." {
-                    if !new_path.pop() {
-                        bail!(ObjectStoreError::NoParent)
-                    }
-                } else {
-                    new_path.push(p);
-                }
-            }
-        };
-
-        Ok(new_path.into_os_string())
     }
 
     pub(crate) fn open_metadata(

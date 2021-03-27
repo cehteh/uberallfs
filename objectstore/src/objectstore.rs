@@ -56,7 +56,7 @@ impl ObjectStore {
     }
 
     /// Opens an ObjectStore at the given path.
-    pub(crate) fn open(dir: &Path) -> Result<ObjectStore> {
+    pub fn open(dir: &Path) -> Result<ObjectStore> {
         let version = Self::get_version(dir)?;
         ensure!(
             version == crate::VERSION,

@@ -23,6 +23,13 @@ fn mount_optargs() -> App<'static, 'static> {
                 .long("offline")
                 .help("Start without the network node"),
         )
+        .arg(
+            Arg::with_name("root")
+                .short("r")
+                .long("root")
+                .takes_value(true)
+                .help("Path to an alternative root directory"),
+        )
 }
 
 fn umount_optargs() -> App<'static, 'static> {

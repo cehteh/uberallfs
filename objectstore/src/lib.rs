@@ -13,7 +13,7 @@ mod errors;
 mod identifier;
 mod identifier_kind;
 mod object;
-mod objectstore;
+pub mod objectstore;
 mod opath;
 mod rev_cursor;
 

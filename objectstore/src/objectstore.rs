@@ -32,11 +32,14 @@ pub struct ObjectStore {
     //PLANNED: identifier hash
 }
 
+/// The ObjectStore
 impl ObjectStore {
-    fn get_version(dir: &path::Path) -> Result<u32> {
+    /// reads the objectstore version on disk. This defines the layout of the files on disk.
+    /// Version '0' is a everlasting development and incompatible with anything else version.
+    fn get_version(dir: &Path) -> Result<u32> {
         use std::io::{BufRead, BufReader};
 
-        let mut version_name = path::PathBuf::from(dir);
+        let mut version_name = PathBuf::from(dir);
         version_name.push("objectstore.version");
 
         let mut version_str: String = String::new();
@@ -52,7 +55,8 @@ impl ObjectStore {
         Ok(version)
     }
 
-    pub(crate) fn open(dir: &path::Path) -> Result<ObjectStore> {
+    /// Opens an ObjectStore at the given path.
+    pub(crate) fn open(dir: &Path) -> Result<ObjectStore> {
         let version = Self::get_version(dir)?;
         ensure!(
             version == crate::VERSION,
@@ -70,6 +74,7 @@ impl ObjectStore {
         })
     }
 
+    /// Returns an all-random binary representaton of an Object Identifier.
     pub(crate) fn rng_identifier(&mut self) -> IdentifierBin {
         IdentifierBin(self.rng.gen())
     }
@@ -78,7 +83,7 @@ impl ObjectStore {
         unimplemented!()
     }
 
-    // get the root identifier
+    /// Return the Identifier of the ObjectStores root Object
     pub(crate) fn get_root_id(&self) -> Result<Identifier> {
         let root_link = self.objects.read_link("root")?;
 
@@ -381,7 +386,7 @@ impl ObjectStore {
         identifier.ensure_dir()?;
         let path = OPath::new().push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
-        self.objects.remove_file("root");
+        self.objects.remove_file("root").ok();
         self.objects
             .symlink("root", path.as_os_str())
             .with_context(|| "failed to symlink root object")

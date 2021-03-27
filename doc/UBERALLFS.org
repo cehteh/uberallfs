@@ -212,7 +212,7 @@ functional yet.
      supported).
 
    - The Identifier ::
-     Is a global unique 264 bit number (44 base64 encoded characters). There are different
+     Is a global unique 264 bit number (44 flipbase64 encoded characters). There are different
      types of identifiers which describe how the object is handled.
 
    - Data ::
@@ -225,13 +225,13 @@ functional yet.
 
 *** Object Types
 
-**** tree
+**** Directory
      Stores references to other objects (trees, blobs, symlinks) May store Unix special files
      (fifo, sockets, device nodes) initially private, eventually network transparent nodes may
      be implemented.
 
-**** blob
-     The actual object (file) data.
+**** File
+     The actual File data.
      can be sparse/incomplete with not yet synchronized data.
 
 **** part
@@ -310,50 +310,66 @@ functional yet.
    - afreq :: average frequency of use (rolling average?)
 
 
-* Disk Layout
+** Disk Layout
 
-  There are (so far) three main components which need to be visible on the host
-  filesystem. These are designed to be in the same place (shared directory) as well as in
-  different places with the components shared over several uberallfs instances.
+   There are (so far) three main components which need to be visible on the host
+   filesystem. These are designed to be in the same place (shared directory) as well as in
+   different places with the components shared over several uberallfs instances.
 
-  The basic use case is that all data resides in a single directory which also serves as
-  mountpoint for the fuse filesystem, thus shadowing they underlying data.
+   The basic use case is that all data resides in a single directory which also serves as
+   mountpoint for the fuse filesystem, thus shadowing they underlying data.
 
-** objectstore
+*** objectstore
 
-   The objectstore can be freestanding/self contained no external configuration is needed.
+    The objectstore can be freestanding/self contained no external configuration is needed.
 
-   - objects/ :: used for the objectstore
-   - objects/??/ :: any 2 character dir is used for the first level (4096 dirs, base64)
-   - objects/root/ :: symlink to the root dir object
-   - objects/tmp/ :: for safe tempfile handling
-   - objects/delete/ :: deleted objects with some grace period
-   - objects/volatile :: can be a tmpfs for temporary objects
-   - objects/volatile/??/ :: any 2 character dir is used for the first level (4096 dirs)
-   - config/ :: configuration files
-   - objectstore.version :: version identifier
+    - objects/ :: used for the objectstore
+    - objects/??/ :: any 2 character dir is used for the first level (4096 dirs, base64)
+    - objects/root/ :: symlink to the root dir object
+    - objects/tmp/ :: for safe tempfile handling
+    - objects/delete/ :: deleted objects with some grace period
+    - objects/volatile :: can be a tmpfs for temporary objects
+    - objects/volatile/??/ :: any 2 character dir is used for the first level (4096 dirs)
+    - config/ :: configuration files
+    - objectstore.version :: version identifier
 
-   Planned: links to other objectstores on local computer, possibly on slower media for archives.
+    Planned: links to other objectstores on local computer, possibly on slower media for archives.
 
-** node
+**** objects
 
-   The 'node' manages the data distribution between other nodes, forming a peer to peer network.
+     Objects are stored within the first level (2 character) directory under their flipbase64
+     identifier. Any associated metadata will have the same name but a filename extension
+     per kind of metadata.
 
-   For that it keeps the networks addresses of other nodes and manages network related keys.
+***** Directories
 
-   - config/ :: configuration files
-   - nodes/??/ :: information about other nodes
-   - keystore/ ::
-     some of the keys used to operate the node. Others may be in ~/.config/uberallfs and are
-     loaded on startup. Private keys will be isolated, TBD.
-   - uberallfs.sock :: socket for local node control
-   - node.version :: version identifier
+      Directories in the objectstore refer to the contained objects. This is implemented with
+      some special marked symlink which is the flipbase64 identifier prefixed with
+      ~//uberallfs//~.  This leverages the underlying filesystem semantics for lookup and
+      other operations.
 
-** fuse
+# ***** Files
 
-   When fuse gets mounted it may shadow all of the above and present POSIX compatible
-   file system.  Only files starting with '.uberallfs.' at the root are reserved (control
-   socket etc).
+
+*** node
+
+    The 'node' manages the data distribution between other nodes, forming a peer to peer network.
+
+    For that it keeps the networks addresses of other nodes and manages network related keys.
+
+    - config/ :: configuration files
+    - nodes/??/ :: information about other nodes
+    - keystore/ ::
+      some of the keys used to operate the node. Others may be in ~/.config/uberallfs and are
+      loaded on startup. Private keys will be isolated, TBD.
+    - uberallfs.sock :: socket for local node control
+    - node.version :: version identifier
+
+*** fuse
+
+    When fuse gets mounted it may shadow all of the above and present POSIX compatible
+    file system.  Only files starting with '.uberallfs.' at the root are reserved (control
+    socket etc).
 
 * Access Control
   :PROPERTIES:

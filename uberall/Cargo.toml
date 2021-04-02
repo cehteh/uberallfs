@@ -1,0 +1,15 @@
+[package]
+name = "uberall"
+version = "0.1.0"
+authors = ["Christian Thäter <ct@pipapo.org>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+rand = "0.8"
+rand_core = "0.6"
+rand_hc = "0.3"
+thiserror = "1.0"
+anyhow = "1.0"
+lazy_static = "1.4"
+parking_lot = "0.11"

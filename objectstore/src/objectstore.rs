@@ -1,10 +1,6 @@
 use crate::prelude::*;
 
-use libc;
 use openat::Dir;
-use rand::prelude::*;
-use rand_core::OsRng;
-use rand_hc::Hc128Rng;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
@@ -13,6 +9,8 @@ use lazy_static::lazy_static;
 use regex::bytes::Regex;
 use std::convert::TryInto;
 
+use uberall::uberall::UberAll;
+
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
 use crate::object::Object;
 use crate::opath::OPath;
@@ -20,10 +18,13 @@ use crate::opath::OPath;
 pub struct Meta;
 
 pub struct ObjectStore {
+    #[allow(dead_code)]
     version: u32,
+    #[allow(dead_code)]
     handle: Dir,
     objects: Dir,
-    rng: Hc128Rng,
+
+    uberall: UberAll,
     //log: File, //TODO: logging 'dangerous' actions to be undone
 
     //PLANNED: pid: dir stack for all open dir handles (cwd/parents)
@@ -70,13 +71,13 @@ impl ObjectStore {
             version,
             handle,
             objects,
-            rng: Hc128Rng::from_rng(OsRng)?,
+            uberall: UberAll::new()?,
         })
     }
 
     /// Returns an all-random binary representaton of an Object Identifier.
     pub(crate) fn rng_identifier(&mut self) -> IdentifierBin {
-        IdentifierBin(self.rng.gen())
+        IdentifierBin(self.uberall.rng_gen())
     }
 
     pub(crate) fn import(&self, _archive: &OsStr) -> Result<Object> {

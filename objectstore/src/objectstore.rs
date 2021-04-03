@@ -147,43 +147,35 @@ impl ObjectStore {
     ///  - double slashes, followed by an abbrevitated Identifier, then the traversal starts there
     /// The path is traversed as much as possible, optionally storing the identifiers (parents) leading to that.
     /// Returns the finally found identifiers and the rest of the path thats is not existant.
-    pub(crate) fn path_lookup(
+    pub fn path_lookup(
         &self,
         path: Option<OPath>,
         parents: Option<&mut Vec<Identifier>>,
     ) -> Result<(Identifier, Option<OPath>)> {
-        let (root, path) = match path {
-            None => {
-                // no path at all means root
-                //if let Some(vec) = parents {
-                //} TODO: push
-                (self.get_root_id()?, None)
-            }
+        match path {
+            None => Ok((self.get_root_id()?, None)),
+
             Some(path) => {
                 lazy_static! {
                     static ref PATH_RE: Regex =
                         Regex::new("^(?-u)(/{0,2})(([^/]*)/?(.*))$").unwrap();
                 }
 
-                match PATH_RE.captures(path.as_bytes()) {
+                let (root, path) = match PATH_RE.captures(path.as_bytes()) {
                     Some(captures) => match captures.get(1) {
                         Some(slashes) => match slashes.as_bytes() {
                             b"//" => (
                                 self.identifier_lookup(
                                     captures
                                         .get(3)
-                                        .and_then(|c| Some(OsStr::from_bytes(c.as_bytes())))
+                                        .map(|c| OsStr::from_bytes(c.as_bytes()))
                                         .unwrap(),
                                 )?,
-                                captures
-                                    .get(4)
-                                    .and_then(|c| Some(OPath::from(c.as_bytes()))),
+                                captures.get(4).map(|c| OPath::from(c.as_bytes())),
                             ),
                             b"/" => (
                                 self.get_root_id()?,
-                                captures
-                                    .get(2)
-                                    .and_then(|c| Some(OPath::from(c.as_bytes()))),
+                                captures.get(2).map(|c| OPath::from(c.as_bytes())),
                             ),
                             _ => {
                                 bail!(ObjectStoreError::ObjectStoreFatal(String::from(
@@ -195,19 +187,16 @@ impl ObjectStore {
                         None => unreachable!(), //TODO: can this happen?
                     },
                     None => bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                        "Invalid PATH"
+                        "Invalid Path"
                     ))),
-                }
-            }
-        };
+                };
 
-        path.map(OPath::normalize)
-            .transpose()?
-            .map(|p| Self::traverse_path(self, root, p))
-            .transpose()?
-            .ok_or(anyhow::anyhow!(ObjectStoreError::OptArgError(
-                String::from("no PATH given")
-            )))
+                path.map(OPath::normalize)
+                    .transpose()?
+                    .map(|p| Self::traverse_path(self, root, p))
+                    .unwrap()
+            }
+        }
     }
 
     pub(crate) fn traverse_path(

@@ -102,7 +102,7 @@ impl ObjectStore {
     pub(crate) fn identifier_lookup(&self, abbrev: &OsStr) -> Result<Identifier> {
         trace!("prefix: {:?}", abbrev);
         match abbrev.len() {
-            len if len < 4 || len > 44 => {
+            len if !(4..=44).contains(&len) => {
                 bail!(ObjectStoreError::InvalidIdentifier(String::from(
                     "abbrevitated identifiers must be between 4 to 44 characters in length",
                 )))
@@ -218,10 +218,10 @@ impl ObjectStore {
         trace!("traverse: {:?}", &path);
 
         let mut out = OPath::new();
-        let mut i = path.iter();
+        let i = path.iter();
 
         let mut still_going = true;
-        while let Some(p) = i.next() {
+        for p in i {
             trace!("traverse element: {:?}", &p);
             let subobject = SubObject(&root, p);
             if still_going {
@@ -417,12 +417,13 @@ frontend only (This does not affect permissions and security globally).
  */
 
 #[cfg(unix)]
+#[derive(Default)]
 pub struct FileAccess(libc::c_int);
 
 #[cfg(unix)]
 impl FileAccess {
     pub fn new() -> Self {
-        FileAccess(0)
+        FileAccess::default()
     }
 
     pub fn readonly(mut self) -> Self {
@@ -465,12 +466,13 @@ impl FileAccess {
 }
 
 #[cfg(unix)]
+#[derive(Default)]
 pub struct FilePermissions(libc::mode_t);
 
 #[cfg(unix)]
 impl FilePermissions {
     pub fn new() -> Self {
-        FilePermissions(0)
+        FilePermissions::default()
     }
 
     pub fn read(mut self) -> Self {
@@ -494,12 +496,13 @@ impl FilePermissions {
 }
 
 #[cfg(unix)]
+#[derive(Default)]
 pub struct FileAttributes(libc::mode_t);
 
 #[cfg(unix)]
 impl FileAttributes {
     pub fn new() -> Self {
-        FileAttributes(0)
+        FileAttributes::default()
     }
 
     pub fn execute(mut self) -> Self {
@@ -513,12 +516,13 @@ impl FileAttributes {
 }
 
 #[cfg(unix)]
+#[derive(Default)]
 pub struct DirectoryPermissions(libc::mode_t);
 
 #[cfg(unix)]
 impl DirectoryPermissions {
     pub fn new() -> Self {
-        DirectoryPermissions(0)
+        DirectoryPermissions::default()
     }
 
     pub fn list(mut self) -> Self {

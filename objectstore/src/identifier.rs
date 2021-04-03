@@ -2,7 +2,6 @@ use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 use crate::prelude::*;
 
-use base64;
 use core::mem::MaybeUninit;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -60,7 +59,7 @@ impl TryFrom<&Flipbase64> for IdentifierBin {
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
 
         let mut buffer = [0u8; BINARY_ID_LEN + KIND_ID_LEN];
-        decoder.read(&mut buffer)?;
+        decoder.read_exact(&mut buffer)?;
         let id = unsafe { buffer[1..].try_into().unchecked_unwrap() };
 
         Ok(IdentifierBin(id))
@@ -77,7 +76,7 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
             rev_cursor::ReadCursor::from(&base64.0[FLIPBASE64_LEN - BASE64_AGGREGATE..]);
         let mut decoder = base64::read::DecoderReader::new(&mut cursor, base64::URL_SAFE_NO_PAD);
         let mut kind = [0u8; 1];
-        decoder.read(&mut kind)?;
+        decoder.read_exact(&mut kind)?;
 
         Ok(IdentifierKind(kind[0]))
     }

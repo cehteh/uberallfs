@@ -1,9 +1,9 @@
+
 use crate::prelude::*;
 
 use std::ffi::OsStr;
 use std::fmt;
-#[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;
+#[cfg(unix)] use std::os::unix::ffi::OsStrExt;
 use std::path::{Components, Iter, PathBuf};
 
 use crate::identifier::Identifier;

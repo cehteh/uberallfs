@@ -1,9 +1,9 @@
-
 use crate::prelude::*;
 
 use std::ffi::OsStr;
 use std::fmt;
-#[cfg(unix)] use std::os::unix::ffi::OsStrExt;
+#[cfg(unix)]
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Components, Iter, PathBuf};
 
 use crate::identifier::Identifier;
@@ -30,6 +30,12 @@ impl fmt::Debug for OPath {
     }
 }
 
+impl Default for OPath {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OPath {
     pub fn new() -> Self {
         OPath(PathBuf::new())
@@ -47,7 +53,7 @@ impl OPath {
     /// normalize a path by removing all current dir ('.') and parent dir ('*/..') references.
     pub fn normalize(self) -> Result<Self> {
         let mut new_path = PathBuf::new();
-        for p in PathBuf::from(self.0).iter() {
+        for p in self.0.iter() {
             if p != "." {
                 if p == ".." {
                     if !new_path.pop() {
@@ -59,7 +65,7 @@ impl OPath {
             }
         }
 
-        Ok(OPath(PathBuf::from(new_path)))
+        Ok(OPath(new_path))
     }
 
     //TODO: push subobject

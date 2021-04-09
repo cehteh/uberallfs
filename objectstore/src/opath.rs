@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
-use std::ffi::OsStr;
+use std::ffi::{CString, OsStr};
 use std::fmt;
 #[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;
+use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::path::{Components, Iter, PathBuf};
 
 use crate::identifier::Identifier;
@@ -24,6 +24,14 @@ impl From<&[u8]> for OPath {
     }
 }
 
+#[cfg(unix)]
+impl Into<*const libc::c_char> for OPath {
+    fn into(self) -> *const libc::c_char {
+        let mut p = self.0.into_os_string().into_vec();
+        unsafe { CString::from_vec_unchecked(p).into_raw() }
+    }
+}
+
 impl fmt::Debug for OPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.write_fmt(format_args!("{:?}", self.as_os_str()))
@@ -39,6 +47,10 @@ impl Default for OPath {
 impl OPath {
     pub fn new() -> Self {
         OPath(PathBuf::new())
+    }
+
+    pub fn from_identifier(identifier: &Identifier) -> Self {
+        OPath::new().push_identifier(identifier)
     }
 
     pub fn prefix(prefix: &OsStr) -> Self {

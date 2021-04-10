@@ -1,8 +1,10 @@
 use crate::prelude::*;
+use std::os::unix::prelude::RawFd;
 
 use openat::Dir;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
+use std::os::unix::io::AsRawFd;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
 
 use lazy_static::lazy_static;
@@ -13,7 +15,7 @@ use uberall::uberall::UberAll;
 
 use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
 use crate::object::Object;
-use crate::opath::OPath;
+pub use crate::opath::OPath;
 
 pub struct Meta;
 
@@ -82,6 +84,11 @@ impl ObjectStore {
 
     pub(crate) fn import(&self, _archive: &OsStr) -> Result<Object> {
         unimplemented!()
+    }
+
+    /// Return raw file descriptor of the objects dir
+    pub fn get_objects_fd(&self) -> RawFd {
+        self.objects.as_raw_fd()
     }
 
     /// Return the Identifier of the ObjectStores root Object
@@ -236,8 +243,8 @@ impl ObjectStore {
 
     //PLANNED: pub(crate) fn object_path(identifier: &Identifier) -> OsString {
 
-    pub(crate) fn sub_object_path(sub_object: &SubObject) -> OsString {
-        //FIXME: use Path
+    pub fn sub_object_path(sub_object: &SubObject) -> OsString {
+        //FIXME: use OPath
         let mut path = PathBuf::from(OsStr::from_bytes(&sub_object.0.id_base64().0[..2]));
         path.push(OsStr::from_bytes(&sub_object.0.id_base64().0));
         path.push(&sub_object.1);

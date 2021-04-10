@@ -11,7 +11,7 @@ extern crate lazy_static;
 
 mod errors;
 pub mod identifier;
-mod identifier_kind;
+pub mod identifier_kind;
 mod object;
 pub mod objectstore;
 mod opath;

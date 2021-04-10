@@ -35,7 +35,7 @@ pub struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 #[derive(Debug, PartialEq, Clone)]
 pub struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Identifier {
     kind: IdentifierKind,
     base64: Flipbase64,
@@ -142,15 +142,15 @@ impl Identifier {
         unsafe { (&self.base64).try_into().unchecked_unwrap() }
     }
 
-    pub(crate) fn object_type(&self) -> ObjectType {
+    pub fn object_type(&self) -> ObjectType {
         self.kind.object_type()
     }
 
-    pub(crate) fn sharing_policy(&self) -> SharingPolicy {
+    pub fn sharing_policy(&self) -> SharingPolicy {
         self.kind.sharing_policy()
     }
 
-    pub(crate) fn mutability(&self) -> Mutability {
+    pub fn mutability(&self) -> Mutability {
         self.kind.mutability()
     }
 

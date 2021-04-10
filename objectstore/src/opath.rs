@@ -6,7 +6,7 @@ use std::fmt;
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::path::{Components, Iter, PathBuf};
 
-use crate::identifier::Identifier;
+use crate::identifier::{self, Identifier};
 
 /// ObjectStore Path handling
 #[derive(PartialEq)]
@@ -57,6 +57,11 @@ impl OPath {
         OPath(PathBuf::from(prefix))
     }
 
+    pub fn reserve(mut self, c: usize) -> Self {
+        self.0.reserve(c);
+        self
+    }
+
     pub fn push(mut self, name: &OsStr) -> Self {
         self.0.push(name);
         self
@@ -83,6 +88,7 @@ impl OPath {
     //TODO: push subobject
     pub fn push_identifier(mut self, identifier: &Identifier) -> Self {
         let bytes = identifier.id_base64().0;
+        self.0.reserve(bytes.len() + 4); // 4 = 2 chars for level, delimiter and zero terminator
         self.0.push(OsStr::from_bytes(&bytes[..2]));
         self.0.push(OsStr::from_bytes(&bytes));
         self

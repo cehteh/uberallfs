@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
-use crate::prelude::*;
 
 use core::mem::MaybeUninit;
 use std::convert::TryFrom;
@@ -43,9 +43,9 @@ pub struct Identifier {
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.debug_struct("Identifier")
-         .field("kind", &self.kind.components())
-         .field("base64", &OsStr::from_bytes(&self.base64.0[..]))
-         .finish()
+            .field("kind", &self.kind.components())
+            .field("base64", &OsStr::from_bytes(&self.base64.0[..]))
+            .finish()
     }
 }
 
@@ -83,7 +83,6 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
 }
 
 impl Identifier {
-
     pub fn ensure_dir(&self) -> Result<()> {
         ensure!(
             self.object_type() == ObjectType::Directory,

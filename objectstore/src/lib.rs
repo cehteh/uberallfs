@@ -10,7 +10,7 @@ pub use self::optargs::optargs;
 extern crate lazy_static;
 
 mod errors;
-mod identifier;
+pub mod identifier;
 mod identifier_kind;
 mod object;
 pub mod objectstore;

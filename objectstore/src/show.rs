@@ -19,7 +19,8 @@ pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         .value_of_os("PATH")
         .or_else(|| Some(&OsStr::from_bytes(b"/")));
 
-    let (src, remaining) = objectstore.path_lookup(path.map(|f| OPath::prefix(f)), None)?;
+    let (src, remaining) = objectstore
+        .path_lookup(path.map(|f| OPath::prefix(f)), None)?;
 
     if remaining == Some(OPath::new()) {
         println!("{:?} -> {:?}", path.unwrap(), src);

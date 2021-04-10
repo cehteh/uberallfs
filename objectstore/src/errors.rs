@@ -48,7 +48,7 @@ pub enum ObjectStoreError {
     ObjectNotFound(OsString),
 
     #[error(transparent)]
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),

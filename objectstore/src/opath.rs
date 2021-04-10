@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::path::Path;
 
 use std::ffi::{CString, OsStr};
 use std::fmt;
@@ -90,6 +91,7 @@ impl OPath {
         self
     }
 
+    /// create a '//uberallfs//flipbase64identifier' special link
     pub fn push_link(mut self, identifier: &Identifier) -> Self {
         self.0.push(OsStr::from_bytes(&crate::VERSION_PREFIX));
         self.0.push(OsStr::from_bytes(&identifier.id_base64().0));
@@ -120,5 +122,9 @@ impl OPath {
 
     pub fn iter(&self) -> Iter {
         self.0.iter()
+    }
+
+    pub fn as_path_ref(&self) -> &Path {
+        &self.0
     }
 }

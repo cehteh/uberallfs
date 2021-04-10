@@ -241,23 +241,12 @@ impl ObjectStore {
         Ok((root, Some(out)))
     }
 
-    //PLANNED: pub(crate) fn object_path(identifier: &Identifier) -> OsString {
 
-    pub fn sub_object_path(sub_object: &SubObject) -> OsString {
-        //FIXME: use OPath
-        let mut path = PathBuf::from(OsStr::from_bytes(&sub_object.0.id_base64().0[..2]));
-        path.push(OsStr::from_bytes(&sub_object.0.id_base64().0));
-        path.push(&sub_object.1);
-
-        path.into_os_string()
-    }
-
+    /// get the identifier of a sub-object
     pub(crate) fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
         sub_object.0.ensure_dir()?;
 
-        let r = self
-            .objects
-            .read_link(&*Self::sub_object_path(sub_object))?;
+        let r = self.objects.read_link(sub_object.as_opath().as_path_ref())?;
 
         Identifier::from_flipbase64(Flipbase64(
             r.as_os_str().as_bytes()[crate::VERSION_PREFIX.len()..].try_into()?,
@@ -314,7 +303,7 @@ impl ObjectStore {
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;
 
-        let source = Self::sub_object_path(&parent);
+        let source = parent.as_opath();
         let dest = OPath::new().push_link(identifier);
 
         trace!(
@@ -403,6 +392,12 @@ pub enum Handle {
 // change_access() etc
 
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
+
+impl SubObject<'_> {
+    pub fn as_opath(&self) -> OPath {
+        self.0.to_opath().push(&self.1)
+    }
+}
 
 /*
 These are permissions/access flages of the objects in the objectstore, abstrated from host

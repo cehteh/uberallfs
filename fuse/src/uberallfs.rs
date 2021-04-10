@@ -17,10 +17,11 @@ use fuser::{
 //PLANNED: may become a disk backed implementation since this can become big
 #[derive(Debug)]
 struct InodeDBEntry {
-    identifier: Identifier,
+    identifier: Identifier,  //TODO: Arc<Identifier>
 }
 
 struct InodeDB {
+    //PLANNED: caches
     inode_to_identifier: HashMap<u64, InodeDBEntry>,
 }
 
@@ -31,9 +32,13 @@ impl InodeDB {
         })
     }
 
-    pub fn store(&mut self, inode: u64, identifier: Identifier) {
-        self.inode_to_identifier
-            .insert(inode, InodeDBEntry { identifier });
+    pub fn store(&mut self, inode: u64, identifier: &Identifier) {
+        self.inode_to_identifier.insert(
+            inode,
+            InodeDBEntry {
+                identifier: identifier.clone(),
+            },
+        );
     }
 
     pub fn find(&mut self, inode: u64) -> Option<&InodeDBEntry> {
@@ -70,7 +75,8 @@ impl UberallFS {
         let (identifier, none) = self.objectstore.path_lookup(root.map(From::from), None)?;
         assert_eq!(none, None);
 
-        self.inodedb.store(1, identifier);
+        self.inodedb.store(1, &identifier);
+        //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
         fuser::mount2(self, mountpoint, &options)?;
         Ok(())
     }
@@ -96,7 +102,8 @@ impl Filesystem for UberallFS {
                 }
                 _ => {
                     warn!("access error {} {}", ino, std::io::Error::last_os_error());
-                    return reply.error(std::io::Error::last_os_error().raw_os_error().unwrap_or(0));
+                    return reply
+                        .error(std::io::Error::last_os_error().raw_os_error().unwrap_or(0));
                 }
             };
         }

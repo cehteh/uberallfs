@@ -11,42 +11,12 @@ use objectstore::identifier::Identifier;
 use objectstore::identifier_kind::ObjectType;
 use objectstore::objectstore::{OPath, ObjectStore, SubObject};
 
+use crate::inodedb::InodeDB;
+
 use fuser::{
     FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty,
     ReplyEntry, Request,
 };
-
-//PLANNED: may become a disk backed implementation since this can become big
-#[derive(Debug)]
-struct InodeDBEntry {
-    identifier: Identifier,  //TODO: Arc<Identifier>
-}
-
-struct InodeDB {
-    //PLANNED: caches
-    inode_to_identifier: HashMap<u64, InodeDBEntry>,
-}
-
-impl InodeDB {
-    pub fn new() -> Result<InodeDB> {
-        Ok(InodeDB {
-            inode_to_identifier: HashMap::new(),
-        })
-    }
-
-    pub fn store(&mut self, inode: u64, identifier: &Identifier) {
-        self.inode_to_identifier.insert(
-            inode,
-            InodeDBEntry {
-                identifier: identifier.clone(),
-            },
-        );
-    }
-
-    pub fn find(&mut self, inode: u64) -> Option<&InodeDBEntry> {
-        self.inode_to_identifier.get(&inode)
-    }
-}
 
 pub struct UberallFS {
     objectstore: ObjectStore,
@@ -93,7 +63,7 @@ impl Filesystem for UberallFS {
             match unsafe {
                 libc::faccessat(
                     self.objectstore.get_objects_fd(),
-                    entry.identifier.to_opath().into(),
+                    entry.to_opath().into(),
                     mode,
                     0,
                 )
@@ -117,7 +87,7 @@ impl Filesystem for UberallFS {
         if let Some(entry) = self.inodedb.find(parent) {
             if let Ok(sub_id) = self
                 .objectstore
-                .sub_object_id(&SubObject(&entry.identifier, name))
+                .sub_object_id(&SubObject(&entry.as_identifier(), name))
             {
                 trace!("sub_id: {:?}", sub_id);
                 if let Ok(metadata) = self.objectstore.object_metadata(&sub_id) {
@@ -136,12 +106,11 @@ impl Filesystem for UberallFS {
 
     fn getattr(&mut self, _req: &Request<'_>, ino: u64, reply: ReplyAttr) {
         if let Some(entry) = self.inodedb.find(ino) {
-            trace!("id: {:?}", entry.identifier);
-            if let Ok(metadata) = self.objectstore.object_metadata(&entry.identifier) {
-                //PLANNED: touch/refresh self.inodedb caches
+            trace!("id: {:?}", entry.as_identifier());
+            if let Ok(metadata) = self.objectstore.object_metadata(&entry.as_identifier()) {
                 return reply.attr(
                     &Duration::from_secs(600),
-                    &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&entry.identifier)),
+                    &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&entry.as_identifier())),
                 );
             }
         }

@@ -14,7 +14,7 @@ pub mod identifier;
 pub mod identifier_kind;
 mod object;
 pub mod objectstore;
-mod opath;
+pub mod opath;
 mod rev_cursor;
 
 mod init;

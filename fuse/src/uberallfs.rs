@@ -5,9 +5,11 @@ use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use objectstore::identifier::Identifier;
-use objectstore::objectstore::{OPath, ObjectStore};
+use objectstore::identifier_kind::ObjectType;
+use objectstore::objectstore::{OPath, ObjectStore, SubObject};
 
 use fuser::{
     FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty,
@@ -111,6 +113,71 @@ impl Filesystem for UberallFS {
         reply.error(libc::ENOENT);
     }
 
+    fn lookup(&mut self, _req: &Request<'_>, parent: u64, name: &OsStr, reply: ReplyEntry) {
+        if let Some(entry) = self.inodedb.find(parent) {
+            if let Ok(sub_id) = self
+                .objectstore
+                .sub_object_id(&SubObject(&entry.identifier, name))
+            {
+                trace!("sub_id: {:?}", sub_id);
+                if let Ok(metadata) = self.objectstore.object_metadata(&sub_id) {
+                    self.inodedb.store(metadata.stat().st_ino, &sub_id);
+                    return reply.entry(
+                        &Duration::from_secs(600),
+                        &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&sub_id)),
+                        0, //TODO: generation
+                    );
+                }
+            }
+        }
 
+        reply.error(libc::ENOENT);
+    }
 
+    fn getattr(&mut self, _req: &Request<'_>, ino: u64, reply: ReplyAttr) {
+        if let Some(entry) = self.inodedb.find(ino) {
+            trace!("id: {:?}", entry.identifier);
+            if let Ok(metadata) = self.objectstore.object_metadata(&entry.identifier) {
+                //PLANNED: touch/refresh self.inodedb caches
+                return reply.attr(
+                    &Duration::from_secs(600),
+                    &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&entry.identifier)),
+                );
+            }
+        }
+        reply.error(libc::ENOENT);
+    }
+}
+
+fn unix_to_system_time(sec: libc::time_t, ns: i64) -> SystemTime {
+    UNIX_EPOCH + Duration::from_secs(sec as u64) + Duration::from_nanos(ns as u64)
+}
+
+fn identifier_to_filetype(identifier: &Identifier) -> FileType {
+    match identifier.object_type() {
+        ObjectType::File => FileType::RegularFile,
+        ObjectType::Directory => FileType::Directory,
+        _ => unimplemented!(),
+    }
+}
+
+fn stat_to_fileattr(stat: &libc::stat, kind: FileType) -> FileAttr {
+    FileAttr {
+        ino: stat.st_ino,
+        size: stat.st_size as u64,
+        blocks: stat.st_blocks as u64,
+        atime: unix_to_system_time(stat.st_atime, stat.st_atime_nsec),
+        mtime: unix_to_system_time(stat.st_mtime, stat.st_mtime_nsec),
+        ctime: unix_to_system_time(stat.st_ctime, stat.st_ctime_nsec),
+        crtime: UNIX_EPOCH, //unused
+        kind,
+        perm: stat.st_mode as u16, //FIXME: not sure
+        nlink: stat.st_nlink as u32,
+        uid: stat.st_uid,
+        gid: stat.st_gid,
+        rdev: stat.st_rdev as u32,
+        blksize: stat.st_blksize as u32,
+        padding: 0,
+        flags: 0,
+    }
 }

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use std::os::unix::prelude::RawFd;
 
-use openat::Dir;
+use openat::{Dir, Metadata};
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::AsRawFd;
@@ -243,7 +243,7 @@ impl ObjectStore {
 
 
     /// get the identifier of a sub-object
-    pub(crate) fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
+    pub fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
         sub_object.0.ensure_dir()?;
 
         let r = self.objects.read_link(sub_object.as_opath().as_path_ref())?;
@@ -361,6 +361,10 @@ impl ObjectStore {
         attr: FileAttributes,
     ) -> Result<()> {
         unimplemented!()
+    }
+
+    pub fn object_metadata(&self, identifier: &Identifier) -> io::Result<Metadata> {
+        self.objects.metadata(identifier.to_opath().as_path_ref())
     }
 
     //pub fn remove_object // move to deleted (w/ link)

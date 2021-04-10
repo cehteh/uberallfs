@@ -508,6 +508,8 @@ functional yet.
       This is the *authoritative* permission.
     * append ::
 
+# idea: 'fifo' files of defined, only append-able, but begin can be removed
+
 *** Directory Permissions
 
     *WIP!*
@@ -604,7 +606,6 @@ functional yet.
 *** Initialize and start a new uberallfs node
 
 **** With private root
-     
 
      #+CAPTION: plumbing
      #+BEGIN_SRC
@@ -642,7 +643,7 @@ functional yet.
 
      #+CAPTION: porcelain
      #+BEGIN_SRC
-     $ uberallfs chtype public_mutable ./DIR_A
+     $ uberallfs chtype public_mutable /path/to/root
      #+END_SRC
 
 **** Shared Root Dir
@@ -791,4 +792,6 @@ functional yet.
 
        This grace time can be exponential, starting from for example 30 seconds, doubling on
        every expire where the object is still in use up to some upper limit.
-       
+
+* Ideas
+

@@ -34,7 +34,9 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
                     return Err(Error::from(ObjectStoreError::ObjectStoreExists(dir.into())));
                 }
             } else if dir.read_dir()?.next().is_some() {
-                return Err(Error::from(ObjectStoreError::ObjectStoreForeignExists(dir.into())));
+                return Err(Error::from(ObjectStoreError::ObjectStoreForeignExists(
+                    dir.into(),
+                )));
             }
         } else {
             return Err(Error::from(ObjectStoreError::ObjectStoreNoDir(dir.into())));
@@ -63,20 +65,18 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         } else {
             None
         }
-    } else {
-        if !matches.is_present("noroot") {
-            Some(
-                Object::new(
-                    ObjectType::Directory,
-                    SharingPolicy::Private,
-                    Mutability::Mutable,
-                    objectstore.rng_identifier(),
-                )
-                .realize(&objectstore),
+    } else if !matches.is_present("noroot") {
+        Some(
+            Object::new(
+                ObjectType::Directory,
+                SharingPolicy::Private,
+                Mutability::Mutable,
+                objectstore.rng_identifier(),
             )
-        } else {
-            None
-        }
+            .realize(&objectstore),
+        )
+    } else {
+        None
     };
 
     match maybe_root {

@@ -77,6 +77,32 @@ impl UberallFS {
 }
 
 impl Filesystem for UberallFS {
+    fn access(&mut self, _req: &Request<'_>, ino: u64, mode: i32, reply: ReplyEmpty) {
+        //PLANNED: store permissions in inodedb, do access check against that
+        //PLANNED: check what the benefits of access() are, can we go without?
+
+        if let Some(entry) = self.inodedb.find(ino) {
+            match unsafe {
+                libc::faccessat(
+                    self.objectstore.get_objects_fd(),
+                    OPath::from_identifier(&entry.identifier).into(),
+                    mode,
+                    0,
+                )
+            } {
+                0 => {
+                    trace!("access ok {}", ino);
+                    return reply.ok();
+                }
+                _ => {
+                    warn!("access error {} {}", ino, std::io::Error::last_os_error());
+                    return reply.error(std::io::Error::last_os_error().raw_os_error().unwrap_or(0));
+                }
+            };
+        }
+        error!("inode not found {}", ino);
+        reply.error(libc::ENOENT);
+    }
 
 
 

@@ -1,3 +1,4 @@
+use crate::opath::OPath;
 use crate::prelude::*;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
@@ -151,5 +152,11 @@ impl Identifier {
 
     pub(crate) fn mutability(&self) -> Mutability {
         self.kind.mutability()
+    }
+
+    /// create a objectstore path from an identifier
+    #[cfg(unix)]
+    pub fn to_opath(&self) -> OPath {
+        OPath::new().push_identifier(self)
     }
 }

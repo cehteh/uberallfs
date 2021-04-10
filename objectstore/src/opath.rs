@@ -49,10 +49,6 @@ impl OPath {
         OPath(PathBuf::new())
     }
 
-    pub fn from_identifier(identifier: &Identifier) -> Self {
-        OPath::new().push_identifier(identifier)
-    }
-
     pub fn prefix(prefix: &OsStr) -> Self {
         OPath(PathBuf::from(prefix))
     }

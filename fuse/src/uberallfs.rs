@@ -85,7 +85,7 @@ impl Filesystem for UberallFS {
             match unsafe {
                 libc::faccessat(
                     self.objectstore.get_objects_fd(),
-                    OPath::from_identifier(&entry.identifier).into(),
+                    entry.identifier.to_opath().into(),
                     mode,
                     0,
                 )

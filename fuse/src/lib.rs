@@ -9,6 +9,7 @@ pub use self::optargs::optargs;
 mod mount;
 mod uberallfs;
 mod inodedb;
+mod handledb;
 
 pub const VERSION: u32 = 0;
 

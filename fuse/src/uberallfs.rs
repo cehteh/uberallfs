@@ -120,6 +120,22 @@ impl Filesystem for UberallFS {
         }
         reply.error(libc::ENOENT);
     }
+
+    fn opendir(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
+        match self.inodedb.get(ino) {
+            Some(entry) if entry.as_identifier().object_type() == ObjectType::Directory => {
+                unimplemented!();
+                reply.error(libc::EACCES);
+            }
+            Some(_) => {
+                reply.error(libc::ENOTDIR);
+            }
+            None => {
+                reply.error(libc::ENOENT);
+            }
+        }
+    }
+
 }
 
 fn unix_to_system_time(sec: libc::time_t, ns: i64) -> SystemTime {

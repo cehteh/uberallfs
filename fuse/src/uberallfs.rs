@@ -11,23 +11,23 @@ use objectstore::identifier::Identifier;
 use objectstore::identifier_kind::ObjectType;
 use objectstore::objectstore::{OPath, ObjectStore, SubObject};
 
-use crate::inodedb::InodeDB;
+use crate::inodedb::InodeDb;
 
 use fuser::{
     FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty,
-    ReplyEntry, Request,
+    ReplyEntry, ReplyOpen, Request,
 };
 
 pub struct UberallFS {
     objectstore: ObjectStore,
-    inodedb: InodeDB,
+    inodedb: InodeDb,
 }
 
 impl UberallFS {
     pub fn new(objectstore_dir: &Path) -> Result<UberallFS> {
         Ok(UberallFS {
             objectstore: ObjectStore::open(objectstore_dir)?,
-            inodedb: InodeDB::new()?,
+            inodedb: InodeDb::new()?,
         })
     }
 
@@ -47,7 +47,7 @@ impl UberallFS {
         let (identifier, none) = self.objectstore.path_lookup(root.map(From::from), None)?;
         assert_eq!(none, None);
 
-        self.inodedb.store(1, &identifier);
+        self.inodedb.store(1, identifier);
         //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
         fuser::mount2(self, mountpoint, &options)?;
         Ok(())
@@ -59,7 +59,7 @@ impl Filesystem for UberallFS {
         //PLANNED: store permissions in inodedb, do access check against that
         //PLANNED: check what the benefits of access() are, can we go without?
 
-        if let Some(entry) = self.inodedb.find(ino) {
+        if let Some(entry) = self.inodedb.get(ino) {
             match unsafe {
                 libc::faccessat(
                     self.objectstore.get_objects_fd(),
@@ -84,14 +84,15 @@ impl Filesystem for UberallFS {
     }
 
     fn lookup(&mut self, _req: &Request<'_>, parent: u64, name: &OsStr, reply: ReplyEntry) {
-        if let Some(entry) = self.inodedb.find(parent) {
+        if let Some(entry) = self.inodedb.get(parent) {
             if let Ok(sub_id) = self
                 .objectstore
                 .sub_object_id(&SubObject(&entry.as_identifier(), name))
             {
                 trace!("sub_id: {:?}", sub_id);
                 if let Ok(metadata) = self.objectstore.object_metadata(&sub_id) {
-                    self.inodedb.store(metadata.stat().st_ino, &sub_id);
+                    let entry = self.inodedb.store(metadata.stat().st_ino, sub_id);
+                    let sub_id = entry.as_identifier();
                     return reply.entry(
                         &Duration::from_secs(600),
                         &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&sub_id)),
@@ -105,12 +106,15 @@ impl Filesystem for UberallFS {
     }
 
     fn getattr(&mut self, _req: &Request<'_>, ino: u64, reply: ReplyAttr) {
-        if let Some(entry) = self.inodedb.find(ino) {
+        if let Some(entry) = self.inodedb.get(ino) {
             trace!("id: {:?}", entry.as_identifier());
             if let Ok(metadata) = self.objectstore.object_metadata(&entry.as_identifier()) {
                 return reply.attr(
                     &Duration::from_secs(600),
-                    &stat_to_fileattr(metadata.stat(), identifier_to_filetype(&entry.as_identifier())),
+                    &stat_to_fileattr(
+                        metadata.stat(),
+                        identifier_to_filetype(&entry.as_identifier()),
+                    ),
                 );
             }
         }

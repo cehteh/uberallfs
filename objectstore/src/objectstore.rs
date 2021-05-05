@@ -385,14 +385,6 @@ impl Drop for ObjectStore {
     fn drop(&mut self) {}
 }
 
-pub enum Handle {
-    Dir(openat::Dir),
-    File(std::fs::File),
-}
-
-// impl Handle
-// change_access() etc
-
 /// identifier/name pair for a subobject in a directory
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
 

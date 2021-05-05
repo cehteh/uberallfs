@@ -9,7 +9,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 
 use objectstore::{Handle, OPath, ObjectStore, SubObject, Identifier, ObjectType};
-use crate::inodedb::InodeDb;
+
+use crate::{HandleDb, InodeDb};
 
 use fuser::{
     FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty,
@@ -19,6 +20,7 @@ use fuser::{
 pub struct UberallFS {
     objectstore: ObjectStore,
     inodedb: InodeDb,
+    handledb: HandleDb,
 }
 
 impl UberallFS {
@@ -26,6 +28,7 @@ impl UberallFS {
         Ok(UberallFS {
             objectstore: ObjectStore::open(objectstore_dir)?,
             inodedb: InodeDb::new()?,
+            handledb: HandleDb::with_capacity(1024)?,
         })
     }
 

@@ -9,7 +9,7 @@ use objectstore::Handle;
 
 enum Entry {
     Invalid(usize),
-    Valid(Arc<Handle>),  // RefCell?
+    Valid(Arc<Mutex<Handle>>),
 }
 
 use Entry::*;
@@ -21,41 +21,41 @@ pub struct HandleDb {
 
 /// Holds File and Directory Handles mapped to u64 indices
 impl HandleDb {
-
     /// Create a HandleDb
-    pub fn with_capacity(capacity: usize) -> Self {
+    pub fn with_capacity(capacity: usize) -> Result<Self> {
         let mut handles = Vec::with_capacity(capacity);
         handles.push(Invalid(0));
 
-        HandleDb {
+        Ok(HandleDb {
             handles: Mutex::new(handles),
             free_idx: 0,
-        }
+        })
     }
 
     /// Pushes a new handle onto the DB, returns an u64 representing it
     pub fn store(&mut self, handle: Handle) -> u64 {
         let mut handles = self.handles.lock();
+        let handle = Valid(Arc::new(Mutex::new(handle)));
         let ret = if let Invalid(next) = handles[self.free_idx] {
-                let free = self.free_idx;
-                handles[free] = Valid(Arc::new(handle));
-                self.free_idx = next;
-                free
-            } else {
-                handles.push(Valid(Arc::new(handle)));
-                handles.len() - 1
+            let free = self.free_idx;
+            handles[free] = handle;
+            self.free_idx = next;
+            free
+        } else {
+            handles.push(handle);
+            handles.len() - 1
         };
         ret as u64
     }
 
     /// get handle by index
-    pub fn get(&mut self, fh: u64) -> Option<Arc<Handle>> {
+    pub fn get(&mut self, fh: u64) -> Option<Arc<Mutex<Handle>>> {
         let fh = fh as usize;
         let mut handles = self.handles.lock();
-        if let Some(Valid(handle)) = handles.get(fh) {
-            Some(Arc::clone(handle))
-        } else {
-            None
+        match handles.get(fh) {
+            Some(Valid(handle)) => Some(handle.clone()),
+            //Some(Valid(handle)) if Arc::<Handle>::strong_count(handle) == 1 => Some(handle.clone()),
+            _ => None,
         }
     }
 

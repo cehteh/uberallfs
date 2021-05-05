@@ -1,2 +1,3 @@
 mod prelude;
-pub mod uberall;
+mod uberall;
+pub use uberall::UberAll;

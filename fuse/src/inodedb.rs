@@ -5,8 +5,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use objectstore::identifier::Identifier;
-use objectstore::opath::OPath;
+use objectstore::{Identifier, OPath};
 
 //PLANNED: may become a disk backed implementation since this can become big
 #[derive(Debug)]

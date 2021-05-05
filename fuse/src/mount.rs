@@ -9,7 +9,7 @@ use fuser::MountOption;
 use std::path::Path;
 use std::ffi::OsStr;
 
-use objectstore::objectstore::ObjectStore;
+use objectstore::ObjectStore;
 
 use crate::uberallfs::UberallFS;
 

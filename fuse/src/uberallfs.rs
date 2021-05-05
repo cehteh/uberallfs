@@ -7,10 +7,8 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use objectstore::identifier::Identifier;
-use objectstore::identifier_kind::ObjectType;
-use objectstore::objectstore::{OPath, ObjectStore, SubObject};
 
+use objectstore::{Handle, OPath, ObjectStore, SubObject, Identifier, ObjectType};
 use crate::inodedb::InodeDb;
 
 use fuser::{

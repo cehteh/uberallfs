@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use objectstore::objectstore::{Handle};
+use objectstore::Handle;
 
 enum Entry {
     Invalid(usize),

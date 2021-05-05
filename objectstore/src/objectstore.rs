@@ -1,21 +1,19 @@
 use crate::prelude::*;
-use std::os::unix::prelude::RawFd;
 
-use openat::{Dir, Metadata};
+use std::convert::TryInto;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::AsRawFd;
+use std::os::unix::prelude::RawFd;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
 
 use lazy_static::lazy_static;
+use openat::{Dir, Metadata};
 use regex::bytes::Regex;
-use std::convert::TryInto;
 
-use uberall::uberall::UberAll;
+use uberall::UberAll;
 
-use crate::identifier::{Flipbase64, Identifier, IdentifierBin};
-use crate::object::Object;
-pub use crate::opath::OPath;
+use crate::{Flipbase64, Handle, Identifier, IdentifierBin, OPath, Object};
 
 pub struct Meta;
 

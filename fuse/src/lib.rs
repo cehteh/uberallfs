@@ -6,10 +6,13 @@ use clap::ArgMatches;
 mod optargs;
 pub use self::optargs::optargs;
 
+mod handledb;
+mod inodedb;
 mod mount;
 mod uberallfs;
-mod inodedb;
-mod handledb;
+
+use handledb::HandleDb;
+use inodedb::InodeDb;
 
 pub const VERSION: u32 = 0;
 

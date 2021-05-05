@@ -10,16 +10,24 @@ pub use self::optargs::optargs;
 extern crate lazy_static;
 
 mod errors;
-pub mod identifier;
-pub mod identifier_kind;
+mod handle;
+mod identifier;
+mod identifier_kind;
 mod object;
-pub mod objectstore;
-pub mod opath;
+mod objectstore;
+mod opath;
 mod rev_cursor;
 
 mod init;
 mod mkdir;
 mod show;
+
+pub use handle::Handle;
+pub use identifier::{Flipbase64, Identifier, IdentifierBin};
+pub use identifier_kind::ObjectType;
+pub use object::Object;
+pub use objectstore::{ObjectStore, SubObject};
+pub use opath::OPath;
 
 /// Objectstore version
 pub const VERSION: u32 = 0;

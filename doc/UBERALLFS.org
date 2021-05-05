@@ -371,6 +371,21 @@ functional yet.
     file system.  Only files starting with '.uberallfs.' at the root are reserved (control
     socket etc).
 
+** Permissions
+
+   Local permissions are treated as 'voluntary' in sense that a Node which gathers access to
+   Data must not compromise the global security of the filesystem. The Objectstore itself runs
+   as single user and uses permissions only to enforce the basic requirements (immutable
+   objects become readonly and so on). Actual permission/access checks are managed by the
+   outward facing VFS Api.
+
+** VFS
+
+   The 'public' API of the Objectstore is a virtual filesystem layer. Frontends like fuse use
+   this to access objects. For this a Client has to authenticate against public Keys and used
+   for permission checks.
+
+
 * Access Control
   :PROPERTIES:
   :CUSTOM_ID: 62c4e059-5538-48a1-953a-43c1c9a5d7fb

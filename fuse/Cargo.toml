@@ -1,6 +1,6 @@
 [package]
 name = "fuse"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Christian Thäter <ct@pipapo.org>"]
 edition = "2018"
 

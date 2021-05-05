@@ -13,9 +13,9 @@ clap = "2.33"
 libc = "0.2"
 thiserror = "1.0"
 anyhow = "1.0"
-uberall = { path = "uberall" }
-objectstore = { path = "objectstore" }
-fuse = { path = "fuse" }
+uberall = { path = "uberall", version = "0.1" }
+objectstore = { path = "objectstore", version = "0.1" }
+fuse = { path = "fuse", version = "0.1" }
 
 
 [workspace]

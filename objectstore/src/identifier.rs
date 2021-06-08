@@ -154,6 +154,14 @@ impl Identifier {
         self.kind.mutability()
     }
 
+    pub fn components(&self) -> (ObjectType, SharingPolicy, Mutability) {
+        (
+            self.kind.object_type(),
+            self.kind.sharing_policy(),
+            self.kind.mutability(),
+        )
+    }
+
     /// create a objectstore path from an identifier
     #[cfg(unix)]
     pub fn to_opath(&self) -> OPath {

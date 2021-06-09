@@ -98,6 +98,8 @@ functional yet.
    At the core is a object store where all filesystem objects are cached. Later support for
    volatile objects is planned to allow once used streaming data. [[#bd6e60d2-31a6-46f8-87ec-173f395ef49b][For Details see below]].
 
+   The Objectstore expose a [[#d2934c08-731b-41dd-84ac-c9a9f0f84f87][Virtual-File-System API]] to give a filesystem alike access layer.
+
 ** Frontends
 
    User-access to the underlying filesystem hierarchy. The primary goal is a Linux fuse
@@ -380,6 +382,9 @@ functional yet.
    outward facing VFS Api.
 
 ** VFS
+  :PROPERTIES:
+  :CUSTOM_ID: d2934c08-731b-41dd-84ac-c9a9f0f84f87
+  :END:
 
    The 'public' API of the Objectstore is a virtual filesystem layer. Frontends like fuse use
    this to access objects. For this a Client has to authenticate against public Keys and used
@@ -513,12 +518,17 @@ functional yet.
    Access control is inclusive, when one could gain access because the key is listed in the
    respective Admin list, then one gets that permission implicitly.
 
+   Someone who gains the knowledge of an Identifier has also further access to inspect its
+   metadata. Thus there are no permission checks on identifers themself. Only their lookup is
+   validated.
+
 *** File Permissions
 
     File permission are initially relatively simple, only 'append' added over unix
     permissions. Should be self explanatory.
 
     * read ::
+      read object
     * write ::
       This is the *authoritative* permission.
     * append ::
@@ -532,14 +542,13 @@ functional yet.
     With directories things become more complicated.
 
     * list ::
-      Allow listing of the directory filenames.
-      Knowing they exist, no object identifiers.
+      Allow listing of the directory filenames only (excluding their identifiers).
     * list-accessible ::
       Listing is filtered to content where one has (any) access to.
     * list-authoritative ::
       Listing is filtered to content where one has authority for.
     * read ::
-      Allow listing of the directory content including object identifiers.
+      Allow listing of the directory content including object identifiers
     * read-accessible ::
       Listing is filtered to content where one has (any) access to.
     * read-authoritative ::

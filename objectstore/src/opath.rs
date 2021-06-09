@@ -93,7 +93,7 @@ impl OPath {
 
     /// create a '//uberallfs//flipbase64identifier' special link
     pub fn push_link(mut self, identifier: &Identifier) -> Self {
-        self.0.push(OsStr::from_bytes(&crate::VERSION_PREFIX));
+        self.0.push(OsStr::from_bytes(&crate::RESERVED_PREFIX));
         self.0.push(OsStr::from_bytes(&identifier.id_base64().0));
         self
     }

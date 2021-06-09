@@ -38,7 +38,7 @@ pub type UserId = u32;
 pub const VERSION: u32 = 0;
 
 /// Prefix used for symlinks to uberallfs objects
-pub const VERSION_PREFIX: [u8; 13] = *b"//uberallfs//";
+pub const RESERVED_PREFIX: [u8; 11] = *b".uberallfs.";
 
 pub fn cmd(matches: &ArgMatches) -> Result<()> {
     let dir = matches.value_of_os("DIRECTORY").expect("infallible");

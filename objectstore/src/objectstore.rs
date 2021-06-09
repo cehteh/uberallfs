@@ -247,7 +247,7 @@ impl ObjectStore {
         let r = self.objects.read_link(sub_object.as_opath().as_path_ref())?;
 
         Identifier::from_flipbase64(Flipbase64(
-            r.as_os_str().as_bytes()[crate::VERSION_PREFIX.len()..].try_into()?,
+            r.as_os_str().as_bytes()[crate::RESERVED_PREFIX.len()..].try_into()?,
         ))
     }
 

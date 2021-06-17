@@ -1,5 +1,5 @@
 #!/bin/bash
-# install this by: ln -s ../.githooks/pre-commit .git/hooks/pre-commit
+# install this by: ln -s ./.githooks/pre-commit .git/hooks/pre-commit
 
 KEEP_TESTS=5
 WORKTREE_DIR="$PWD"
@@ -17,5 +17,6 @@ git archive "$(git write-tree)" --prefix="$test_dir/" | tar xf -
 cd "$test_dir"
 
 ulimit -S -v $MEMORY_KB -t $TIMEOUT_SECS
-cargo errors && cargo test 2>&1 | tee test.log
+# install test with ln -s .branchlocal/*.sh .test_runner
+sh "$WORKTREE_DIR/.test_runner" 2>&1 | tee test.log
 exit $?

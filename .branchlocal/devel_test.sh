@@ -1,2 +1,2 @@
 #!/bin/sh
-cargo errors && cargo test
+cargo errors && cargo test -- --nocapture

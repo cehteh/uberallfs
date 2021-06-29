@@ -17,6 +17,10 @@ uberall = { path = "uberall", version = "0.1" }
 objectstore = { path = "objectstore", version = "0.1" }
 fuse = { path = "fuse", version = "0.1" }
 
+[dev-dependencies]
+tempfile = "3.2"
+bintest = "1.0"
+testcall = "0.1.0"
 
 [workspace]
 members = [

@@ -13,6 +13,11 @@ find -name "${TEST_PREFIX}*" -type d | sort -n | head -n -$KEEP_TESTS | xargs -r
 export GIT_AUTHOR_DATE="${GIT_AUTHOR_DATE:-$(awk 'BEGIN {srand(); print srand()}')}"
 test_dir="${TEST_PREFIX}${GIT_AUTHOR_DATE% +*}"
 
+last=$(find -name "${TEST_PREFIX}*" -type d | sort -rn | head -n 1)
+if [[ "$last" ]]; then
+    cp -rl "$last/" "$test_dir"
+fi
+
 git archive "$(git write-tree)" --prefix="$test_dir/" | tar xf -
 cd "$test_dir"
 

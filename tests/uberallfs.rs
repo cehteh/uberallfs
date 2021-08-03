@@ -22,7 +22,7 @@ fn test_version() {
 
     // check for version as remider to keep the tests up to date
     uberallfs
-        .call(["-d", "-v", "--version"], NO_ENVS)
+        .call_args(["-d", "-v", "--version"])
         .assert_success()
         .assert_stdout_utf8("uberallfs 0.0.0");
 }
@@ -33,16 +33,13 @@ fn plumbing_init() {
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
     uberallfs
-        .call(["-d", "-v", "objectstore", "ubatest", "init"], NO_ENVS)
+        .call_args(["-d", "-v", "objectstore", "ubatest", "init"])
         .assert_success();
     uberallfs
-        .call(["-d", "-v", "objectstore", "ubatest", "init"], NO_ENVS)
+        .call_args(["-d", "-v", "objectstore", "ubatest", "init"])
         .assert_failure();
     uberallfs
-        .call(
-            ["-d", "-v", "objectstore", "ubatest", "init", "--force"],
-            NO_ENVS,
-        )
+        .call_args(["-d", "-v", "objectstore", "ubatest", "init", "--force"])
         .assert_success();
 }
 
@@ -52,27 +49,18 @@ fn plumbing_basic() {
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
     uberallfs
-        .call(["-d", "-v", "objectstore", "ubatest", "init"], NO_ENVS)
+        .call_args(["-d", "-v", "objectstore", "ubatest", "init"])
         .assert_success();
     uberallfs
-        .call(
-            ["-d", "-v", "objectstore", "ubatest", "mkdir", "/testdir"],
-            NO_ENVS,
-        )
+        .call_args(["-d", "-v", "objectstore", "ubatest", "mkdir", "/testdir"])
         .assert_success();
     uberallfs
-        .call(
-            ["-d", "-v", "objectstore", "ubatest", "show", "/testdir"],
-            NO_ENVS,
-        )
+        .call_args(["-d", "-v", "objectstore", "ubatest", "show", "/testdir"])
         .assert_success();
     //PLANNED: -p is not implemented yet
     //uberallfs.call(["-d", "-v", "objectstore", "ubatest", "mkdir", "-p", "/test/dir"]);
     //FIXME: uberallfs.fail(["-d", "-v", "objectstore", "ubatest", "show", "/doesnotexist"]);
     uberallfs
-        .call(
-            ["-d", "-v", "objectstore", "ubatest", "show", "hasnoslash"],
-            NO_ENVS,
-        )
+        .call_args(["-d", "-v", "objectstore", "ubatest", "show", "hasnoslash"])
         .assert_failure();
 }

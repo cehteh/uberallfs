@@ -4,13 +4,13 @@ use clap::ArgMatches;
 use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 
-use crate::objectstore::ObjectStore;
 use crate::identifier_kind::*;
+use crate::objectstore::ObjectStore;
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
     //PLANNED: can this be integrated in the clap validator?

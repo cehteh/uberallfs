@@ -45,8 +45,7 @@ impl ObjectStore {
 
         let mut version_str: String = String::new();
 
-        BufReader::new(OpenOptions::new().read(true).open(&version_name)?)
-            .read_line(&mut version_str)?;
+        BufReader::new(OpenOptions::new().read(true).open(&version_name)?).read_line(&mut version_str)?;
 
         version_str.pop();
 
@@ -124,13 +123,13 @@ impl ObjectStore {
                 let mut found: Option<OsString> = None;
                 for entry in self.objects.list_dir(path.as_os_str())? {
                     let entry = entry?;
-                    if entry.file_name().len() == 44 {
-                        if entry.file_name().as_bytes()[..abbrev.len()] == *abbrev.as_bytes() {
-                            if found == None {
-                                found = Some(OsString::from(entry.file_name()));
-                            } else {
-                                bail!(ObjectStoreError::IdentifierAmbiguous(abbrev.into()));
-                            }
+                    if entry.file_name().len() == 44
+                        && entry.file_name().as_bytes()[..abbrev.len()] == *abbrev.as_bytes()
+                    {
+                        if found == None {
+                            found = Some(OsString::from(entry.file_name()));
+                        } else {
+                            bail!(ObjectStoreError::IdentifierAmbiguous(abbrev.into()));
                         }
                     }
                 }
@@ -162,8 +161,7 @@ impl ObjectStore {
 
             Some(path) => {
                 lazy_static! {
-                    static ref PATH_RE: Regex =
-                        Regex::new("^(?-u)(/{0,2})(([^/]*)/?(.*))$").unwrap();
+                    static ref PATH_RE: Regex = Regex::new("^(?-u)(/{0,2})(([^/]*)/?(.*))$").unwrap();
                 }
 
                 let (root, path) = match PATH_RE.captures(path.as_bytes()) {
@@ -171,17 +169,11 @@ impl ObjectStore {
                         Some(slashes) => match slashes.as_bytes() {
                             b"//" => (
                                 self.identifier_lookup(
-                                    captures
-                                        .get(3)
-                                        .map(|c| OsStr::from_bytes(c.as_bytes()))
-                                        .unwrap(),
+                                    captures.get(3).map(|c| OsStr::from_bytes(c.as_bytes())).unwrap(),
                                 )?,
                                 captures.get(4).map(|c| OPath::from(c.as_bytes())),
                             ),
-                            b"/" => (
-                                self.get_root_id()?,
-                                captures.get(2).map(|c| OPath::from(c.as_bytes())),
-                            ),
+                            b"/" => (self.get_root_id()?, captures.get(2).map(|c| OPath::from(c.as_bytes()))),
                             _ => {
                                 bail!(ObjectStoreError::ObjectStoreFatal(String::from(
                                     // reserved for future use
@@ -191,9 +183,7 @@ impl ObjectStore {
                         },
                         None => unreachable!(), //TODO: can this happen?
                     },
-                    None => bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                        "Invalid Path"
-                    ))),
+                    None => bail!(ObjectStoreError::ObjectStoreFatal(String::from("Invalid Path"))),
                 };
 
                 path.map(OPath::normalize)
@@ -204,11 +194,7 @@ impl ObjectStore {
         }
     }
 
-    pub(crate) fn traverse_path(
-        &self,
-        mut root: Identifier,
-        path: OPath,
-    ) -> Result<(Identifier, Option<OPath>)> {
+    pub(crate) fn traverse_path(&self, mut root: Identifier, path: OPath) -> Result<(Identifier, Option<OPath>)> {
         trace!("traverse: {:?}", &path);
 
         let mut out = OPath::new();
@@ -238,7 +224,6 @@ impl ObjectStore {
 
         Ok((root, Some(out)))
     }
-
 
     /// get the identifier of a sub-object
     pub fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
@@ -336,14 +321,8 @@ impl ObjectStore {
         if let Some(parent) = parent {
             parent.0.ensure_dir()?;
 
-            let path = OPath::prefix(OsStr::new(".."))
-                .push_identifier(parent.0)
-                .push(parent.1);
-            info!(
-                "link: {:?} -> {:?}",
-                path.as_os_str(),
-                identifier.id_base64().0
-            );
+            let path = OPath::prefix(OsStr::new("..")).push_identifier(parent.0).push(parent.1);
+            info!("link: {:?} -> {:?}", path.as_os_str(), identifier.id_base64().0);
         }
 
         Ok(())
@@ -353,11 +332,7 @@ impl ObjectStore {
         unimplemented!()
     }
 
-    pub(crate) fn change_attributes(
-        &self,
-        identifier: &Identifier,
-        attr: FileAttributes,
-    ) -> Result<()> {
+    pub(crate) fn change_attributes(&self, identifier: &Identifier, attr: FileAttributes) -> Result<()> {
         unimplemented!()
     }
 
@@ -390,7 +365,7 @@ pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
 
 impl SubObject<'_> {
     pub fn as_opath(&self) -> OPath {
-        self.0.to_opath().push(&self.1)
+        self.0.to_opath().push(self.1)
     }
 }
 
@@ -432,13 +407,13 @@ impl FileAccess {
 
     pub fn append(mut self) -> Self {
         assert_eq!(self.0, 0);
-        self.0 = self.0 | libc::O_APPEND;
+        self.0 |= libc::O_APPEND;
         self
     }
 
     pub fn extra_flags(mut self, flags: libc::c_int) -> Self {
         assert_eq!(self.0, 0);
-        self.0 = self.0 | flags;
+        self.0 |= flags;
         self
     }
 
@@ -527,13 +502,7 @@ impl DirectoryPermissions {
     }
 
     pub fn full(mut self) -> Self {
-        self.0 = self.0
-            | libc::S_IRUSR
-            | libc::S_IRGRP
-            | libc::S_IXUSR
-            | libc::S_IXGRP
-            | libc::S_IWUSR
-            | libc::S_IWGRP;
+        self.0 = self.0 | libc::S_IRUSR | libc::S_IRGRP | libc::S_IXUSR | libc::S_IXGRP | libc::S_IWUSR | libc::S_IWGRP;
         self
     }
 

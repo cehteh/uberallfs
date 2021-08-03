@@ -7,9 +7,7 @@ use std::path::Path;
 
 use std::ffi::OsStr;
 
-use crate::identifier_kind::*;
-use crate::object::Object;
-use crate::objectstore::{ObjectStore, SubObject};
+use crate::objectstore::ObjectStore;
 use crate::opath::OPath;
 
 pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
@@ -17,10 +15,9 @@ pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
     let path = matches
         .value_of_os("PATH")
-        .or_else(|| Some(&OsStr::from_bytes(b"/")));
+        .or_else(|| Some(OsStr::from_bytes(b"/")));
 
-    let (src, remaining) = objectstore
-        .path_lookup(path.map(|f| OPath::prefix(f)), None)?;
+    let (src, remaining) = objectstore.path_lookup(path.map(|f| OPath::prefix(f)), None)?;
 
     if remaining == Some(OPath::new()) {
         println!("{:?} -> {:?}", path.unwrap(), src);

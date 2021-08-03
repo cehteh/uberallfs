@@ -25,7 +25,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let (src, remaining) = objectstore.path_lookup(
         matches
             .value_of_os("PATH")
-            .and_then(|f| Some(OPath::prefix(f))),
+            .map(|f| OPath::prefix(f)),
         None,
     )?;
     src.ensure_dir()?;
@@ -40,7 +40,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
         let object = match matches.value_of("SOURCE") {
             Some(base64) => {
-                if let Some(_) = acl {
+                if acl.is_some() {
                     bail!(ObjectStoreError::OptArgError(String::from(
                         "ACL can only be used with new objects"
                     )));

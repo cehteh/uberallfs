@@ -22,8 +22,8 @@ impl io::Write for WriteCursor<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let mut so_far = 0;
         for c in buf {
-            so_far = so_far + 1;
-            self.pos = self.pos - 1;
+            so_far += 1;
+            self.pos -= 1;
             unsafe { *self.array[self.pos].as_mut_ptr() = *c };
         }
         Ok(so_far)
@@ -56,9 +56,9 @@ impl io::Read for ReadCursor<'_> {
             if self.pos == 0 {
                 break;
             }
-            self.pos = self.pos - 1;
+            self.pos -= 1;
             *c = self.array[self.pos];
-            so_far = so_far + 1;
+            so_far += 1;
         }
 
         Ok(so_far)

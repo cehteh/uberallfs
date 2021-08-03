@@ -54,7 +54,6 @@ impl HandleDb {
         let mut handles = self.handles.lock();
         match handles.get(fh) {
             Some(Valid(handle)) => Some(handle.clone()),
-            //Some(Valid(handle)) if Arc::<Handle>::strong_count(handle) == 1 => Some(handle.clone()),
             _ => None,
         }
     }

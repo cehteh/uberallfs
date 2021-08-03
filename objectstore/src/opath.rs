@@ -7,7 +7,7 @@ use std::fmt;
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::path::{Components, Iter, PathBuf};
 
-use crate::identifier::{self, Identifier};
+use crate::identifier::Identifier;
 
 /// ObjectStore Path handling
 #[derive(PartialEq)]

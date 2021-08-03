@@ -55,13 +55,14 @@ fn init_logging(matches: &ArgMatches) {
 
     verbosity_level += matches.occurrences_of("verbose");
 
+    use log::LevelFilter::*;
     let verbosity_level = match verbosity_level {
-        0 => LevelFilter::Off,
-        1 => LevelFilter::Error,
-        2 => LevelFilter::Warn,
-        3 => LevelFilter::Info,
-        4 => LevelFilter::Debug,
-        _ => LevelFilter::Trace,
+        0 => Off,
+        1 => Error,
+        2 => Warn,
+        3 => Info,
+        4 => Debug,
+        _ => Trace,
     };
 
     SimpleLogger::new()

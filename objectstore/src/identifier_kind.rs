@@ -52,15 +52,15 @@ impl IdentifierKind {
     }
 
     pub fn object_type(&self) -> ObjectType {
-        unsafe { std::mem::transmute::<_, ObjectType>(self.0 & 0b11100000) }
+        unsafe { std::mem::transmute::<_, _>(self.0 & 0b11100000) }
     }
 
     pub fn sharing_policy(&self) -> SharingPolicy {
-        unsafe { std::mem::transmute::<_, SharingPolicy>(self.0 & 0b00011100) }
+        unsafe { std::mem::transmute::<_, _>(self.0 & 0b00011100) }
     }
 
     pub fn mutability(&self) -> Mutability {
-        unsafe { std::mem::transmute::<_, Mutability>(self.0 & 0b00000011) }
+        unsafe { std::mem::transmute::<_, _>(self.0 & 0b00000011) }
     }
 
     pub fn components(&self) -> (ObjectType, SharingPolicy, Mutability) {

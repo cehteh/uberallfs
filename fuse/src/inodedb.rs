@@ -39,7 +39,7 @@ impl InodeDb {
         let mut inode_to_identifier = self.inode_to_identifier.lock();
 
         let entry = Arc::new(Entry {
-            identifier: identifier,
+            identifier,
         });
 
         inode_to_identifier.insert(inode, Arc::clone(&entry));
@@ -49,10 +49,6 @@ impl InodeDb {
     pub fn get(&mut self, inode: u64) -> Option<Arc<Entry>> {
         let mut inode_to_identifier = self.inode_to_identifier.lock();
         //PLANNED: touch/refresh self.inodedb caches
-        if let Some(entry) = inode_to_identifier.get(&inode) {
-            Some(Arc::clone(entry))
-        } else {
-            None
-        }
+        inode_to_identifier.get(&inode).map(|entry| Arc::clone(entry))
     }
 }

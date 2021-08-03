@@ -2,9 +2,6 @@ use crate::prelude::*;
 
 use clap::ArgMatches;
 
-#[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;
-
 use fuser::MountOption;
 use std::path::Path;
 use std::ffi::OsStr;

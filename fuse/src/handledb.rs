@@ -7,8 +7,10 @@ use parking_lot::Mutex;
 
 use objectstore::Handle;
 
+type NextFree = usize;
+
 enum Entry {
-    Invalid(usize),
+    Invalid(NextFree),
     Valid(Arc<Mutex<Handle>>),
 }
 
@@ -16,7 +18,7 @@ use Entry::*;
 
 pub struct HandleDb {
     handles: Mutex<Vec<Entry>>,
-    free_idx: usize, // linked list of free positions
+    free_idx: NextFree, // linked list of free positions
 }
 
 /// Holds File and Directory Handles mapped to u64 indices

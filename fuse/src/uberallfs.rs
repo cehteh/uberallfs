@@ -1,14 +1,12 @@
 use crate::prelude::*;
 
 use std::ffi::OsStr;
-#[cfg(unix)]
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use parking_lot::Mutex;
 
-use objectstore::{Identifier, ObjectType, SubObject, VirtualFileSystem};
+use objectstore::{Identifier, ObjectType, VirtualFileSystem};
 
 use crate::{HandleDb, InodeDb};
 

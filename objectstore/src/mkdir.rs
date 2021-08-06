@@ -1,21 +1,20 @@
 use crate::prelude::*;
 
 use clap::ArgMatches;
-use std::path::Path;
+use std::path::PathBuf;
 
 use std::ffi::OsStr;
 
 use crate::identifier_kind::*;
 use crate::object::Object;
 use crate::objectstore::{ObjectStore, SubObject};
-use crate::opath::OPath;
 
 pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let mut objectstore = ObjectStore::open(Path::new(dir))?;
+    let mut objectstore = ObjectStore::open(dir.as_ref())?;
 
     let mut sharing_policy = SharingPolicy::Private;
 
-    let acl = if let Some(acls) = matches.value_of("acl") {
+    let acl = if let Some(_acls) = matches.value_of("acl") {
         sharing_policy = SharingPolicy::PublicAcl;
         Some(crate::object::Acl {})
     } else {
@@ -23,23 +22,23 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     };
 
     let (src, remaining) = objectstore.path_lookup(
-        matches
+        &matches
             .value_of_os("PATH")
-            .map(|f| OPath::prefix(f)),
+            .map(PathBuf::from).unwrap(),
         None,
     )?;
     src.ensure_dir()?;
 
-    if let Some(names) = remaining {
-        trace!("mkdir src: {:?}/{:?}", src, names.as_os_str());
+    if !remaining.as_os_str().is_empty() {
+        trace!("mkdir src: {:?}/{:?}", src, remaining.as_os_str());
 
-        if names.components().next() == None {
+        if remaining.components().next() == None {
             bail!(ObjectStoreError::ObjectExists)
         }
-        assert_eq!(names.components().count(), 1, "TODO: parent dir handling");
+        assert_eq!(remaining.components().count(), 1, "TODO: parent dir handling");
 
         let object = match matches.value_of("SOURCE") {
-            Some(base64) => {
+            Some(_base64) => {
                 if acl.is_some() {
                     bail!(ObjectStoreError::OptArgError(String::from(
                         "ACL can only be used with new objects"
@@ -61,7 +60,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         trace!("mkdir dest: {:?}", &object.identifier);
 
         //FIXME: remove object when failed and not from SOURCE
-        objectstore.create_link(&object.identifier, SubObject(&src, names.as_os_str()))?;
+        objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))?;
     } else {
         bail!(ObjectStoreError::OptArgError(String::from("PATH foo")))
     }

@@ -47,7 +47,7 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
 }
 
 pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let dir = Path::new(dir);
+    let dir = dir.as_ref();
 
     valid_objectstore_dir(dir, matches.is_present("force"))?;
 

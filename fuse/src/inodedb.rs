@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use objectstore::{Identifier, OPath};
+use objectstore::{Identifier};
 
 //PLANNED: may become a disk backed implementation since this can become big
 #[derive(Debug)]
@@ -16,10 +16,6 @@ pub(crate) struct Entry {
 impl Entry {
     pub(crate) fn as_identifier(&self) -> &Identifier {
         &self.identifier
-    }
-
-    pub(crate) fn to_opath(&self) -> OPath {
-        self.identifier.to_opath()
     }
 }
 

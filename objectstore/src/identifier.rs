@@ -1,4 +1,5 @@
-use crate::opath::OPath;
+use std::path::PathBuf;
+use crate::objectpath::ObjectPath;
 use crate::prelude::*;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
@@ -164,7 +165,9 @@ impl Identifier {
 
     /// create a objectstore path from an identifier
     #[cfg(unix)]
-    pub fn to_opath(&self) -> OPath {
-        OPath::new().push_identifier(self)
+    pub fn to_pathbuf(&self) -> PathBuf {
+        let mut pathbuf = PathBuf::new();
+        pathbuf.push_identifier(self);
+        pathbuf
     }
 }

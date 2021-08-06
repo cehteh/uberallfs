@@ -13,7 +13,7 @@ use regex::bytes::Regex;
 
 use uberall::UberAll;
 
-use crate::{Flipbase64, Handle, Identifier, IdentifierBin, OPath, Object};
+use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
 
 pub struct Meta;
 
@@ -112,13 +112,13 @@ impl ObjectStore {
                 )))
             }
             len if len == 44 => {
-                let path = OPath::from(&abbrev.as_bytes()[..2]).push(abbrev);
+                let path = objectpath::from_bytes(&abbrev.as_bytes()[..2]).join(abbrev);
                 self.objects.metadata(path.as_os_str())?;
                 //TODO: look into deleted objects / revive
                 Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?))
             }
             _ => {
-                let path = OPath::from(&abbrev.as_bytes()[..2]);
+                let path = objectpath::from_bytes(&abbrev.as_bytes()[..2]);
 
                 let mut found: Option<OsString> = None;
                 for entry in self.objects.list_dir(path.as_os_str())? {
@@ -148,60 +148,61 @@ impl ObjectStore {
     /// Do full path lookups
     /// Paths can start with:
     ///  - a single slash, then path traversal starts at the root
-    ///  - double slashes, followed by an abbrevitated Identifier, then the traversal starts there
+    ///  - an abbrevitated Identifier followed by a double slash '//', then the traversal starts there
     /// The path is traversed as much as possible, optionally storing the identifiers (parents) leading to that.
     /// Returns the finally found identifiers and the rest of the path thats is not existant.
     pub fn path_lookup(
         &self,
-        path: Option<OPath>,
+        path: &Path,
         parents: Option<&mut Vec<Identifier>>,
-    ) -> Result<(Identifier, Option<OPath>)> {
-        match path {
-            None => Ok((self.get_root_id()?, None)),
+    ) -> Result<(Identifier, PathBuf)> {
+        if path.as_os_str() == "" {
+            Ok((self.get_root_id()?, PathBuf::new()))
+        } else {
+            lazy_static! {
+                static ref PATH_RE: Regex = Regex::new(r"^(?:([^/]{4,44})/|)/(.*)").unwrap();
+            }
 
-            Some(path) => {
-                lazy_static! {
-                    static ref PATH_RE: Regex = Regex::new("^(?-u)(/{0,2})(([^/]*)/?(.*))$").unwrap();
-                }
-
-                let (root, path) = match PATH_RE.captures(path.as_bytes()) {
-                    Some(captures) => match captures.get(1) {
-                        Some(slashes) => match slashes.as_bytes() {
-                            b"//" => (
-                                self.identifier_lookup(
-                                    captures.get(3).map(|c| OsStr::from_bytes(c.as_bytes())).unwrap(),
-                                )?,
-                                captures.get(4).map(|c| OPath::from(c.as_bytes())),
-                            ),
-                            b"/" => (self.get_root_id()?, captures.get(2).map(|c| OPath::from(c.as_bytes()))),
-                            _ => {
-                                bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                                    // reserved for future use
-                                    "Paths w/o leading slash are not supported"
-                                )))
-                            }
-                        },
-                        None => unreachable!(), //TODO: can this happen?
-                    },
-                    None => bail!(ObjectStoreError::ObjectStoreFatal(String::from("Invalid Path"))),
+            let (root, mut path) =
+                if let Some(captures) = PATH_RE.captures(path.as_os_str().as_bytes()) {
+                    let root;
+                    let id: &OsStr = OsStrExt::from_bytes(
+                        if let Some(capture) = captures.get(1) {
+                            capture.as_bytes()
+                        } else {
+                            root = self.get_root_id()?;
+                            &root.id_base64().0
+                        }
+                    );
+                    (
+                        self.identifier_lookup(id)?,
+                        objectpath::from_bytes(captures.get(2).unwrap().as_bytes())
+                    )
+                } else {
+                    bail!(ObjectStoreError::ObjectStoreFatal(String::from(
+                        "Invalid Path"
+                    )))
                 };
 
-                path.map(OPath::normalize)
-                    .transpose()?
-                    .map(|p| Self::traverse_path(self, root, p))
-                    .unwrap()
-            }
+            path.normalize()?;
+
+            self.traverse_path(root, path, parents)
         }
     }
 
-    pub(crate) fn traverse_path(&self, mut root: Identifier, path: OPath) -> Result<(Identifier, Option<OPath>)> {
+    /// Walk the path starting at root following existing elements
+    pub(crate) fn traverse_path(
+        &self,
+        mut root: Identifier,
+        path: PathBuf,
+        _parents: Option<&mut Vec<Identifier>>,
+    ) -> Result<(Identifier, PathBuf)> {
         trace!("traverse: {:?}", &path);
-
-        let mut out = OPath::new();
-        let i = path.iter();
+        //TODO: track parents
+        let mut out = PathBuf::new();
 
         let mut still_going = true;
-        for p in i {
+        for p in path.iter() {
             trace!("traverse element: {:?}", &p);
             let subobject = SubObject(&root, p);
             if still_going {
@@ -214,22 +215,22 @@ impl ObjectStore {
                         trace!("subobject: fail {:?}", &x);
 
                         still_going = false;
-                        out = out.push(p);
+                        out.push(p);
                     }
                 }
             } else {
-                out = out.push(p);
+                out.push(p);
             }
         }
 
-        Ok((root, Some(out)))
+        Ok((root, out))
     }
 
     /// get the identifier of a sub-object
     pub fn sub_object_id(&self, sub_object: &SubObject) -> Result<Identifier> {
         sub_object.0.ensure_dir()?;
 
-        let r = self.objects.read_link(sub_object.as_opath().as_path_ref())?;
+        let r = self.objects.read_link(&sub_object.to_pathbuf())?;
 
         Identifier::from_flipbase64(Flipbase64(
             r.as_os_str().as_bytes()[crate::RESERVED_PREFIX.len()..].try_into()?,
@@ -286,8 +287,9 @@ impl ObjectStore {
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;
 
-        let source = parent.as_opath();
-        let dest = OPath::new().push_link(identifier);
+        let source = parent.to_pathbuf();
+        let mut dest = PathBuf::new();
+        dest.push_link(identifier);
 
         trace!(
             "mkdir link: {:?} -> {:?}",
@@ -313,7 +315,8 @@ impl ObjectStore {
         perm: DirectoryPermissions,
     ) -> Result<()> {
         identifier.ensure_dir()?;
-        let path = OPath::new().push_identifier(identifier);
+        let mut path = PathBuf::new();
+        path.push_identifier(identifier);
         info!("create_directory: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
@@ -321,8 +324,8 @@ impl ObjectStore {
         if let Some(parent) = parent {
             parent.0.ensure_dir()?;
 
-            let path = OPath::prefix(OsStr::new("..")).push_identifier(parent.0).push(parent.1);
-            info!("link: {:?} -> {:?}", path.as_os_str(), identifier.id_base64().0);
+            let path = PathBuf::from("..").push_identifier(parent.0).push(parent.1);
+            info!("link: {:?} -> {:?}", path, identifier.id_base64().0);
         }
 
         Ok(())
@@ -337,7 +340,7 @@ impl ObjectStore {
     }
 
     pub fn object_metadata(&self, identifier: &Identifier) -> io::Result<Metadata> {
-        self.objects.metadata(identifier.to_opath().as_path_ref())
+        self.objects.metadata(identifier.to_pathbuf().as_path())
     }
 
     //pub fn remove_object // move to deleted (w/ link)
@@ -347,7 +350,8 @@ impl ObjectStore {
     //pub fn cleanup_deleted // delete expired objects
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
         identifier.ensure_dir()?;
-        let path = OPath::new().push_identifier(identifier);
+        let mut path = PathBuf::new();
+        path.push_identifier(identifier);
         info!("set_root: {:?}", path.as_os_str());
         self.objects.remove_file("root").ok();
         self.objects
@@ -364,8 +368,9 @@ impl Drop for ObjectStore {
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
 
 impl SubObject<'_> {
-    pub fn as_opath(&self) -> OPath {
-        self.0.to_opath().push(self.1)
+    #[inline]
+    pub fn to_pathbuf(&self) -> PathBuf {
+        PathBuf::new().push_identifier(self.0).join(self.1)
     }
 }
 

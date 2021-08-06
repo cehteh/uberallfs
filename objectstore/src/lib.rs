@@ -15,7 +15,7 @@ mod identifier;
 mod identifier_kind;
 mod object;
 mod objectstore;
-mod opath;
+mod objectpath;
 mod permissions;
 mod rev_cursor;
 
@@ -27,8 +27,8 @@ pub use handle::Handle;
 pub use identifier::{Flipbase64, Identifier, IdentifierBin};
 pub use identifier_kind::{Mutability, ObjectType, SharingPolicy};
 pub use object::Object;
-pub use objectstore::{ObjectStore, SubObject};
-pub use opath::OPath;
+pub use crate::objectstore::{ObjectStore, SubObject};
+pub use crate::objectpath::ObjectPath;
 pub use permissions::{PermissionCheck, PermissionController};
 
 //PLANNED: mockup types defined and exported that dont have a implementation yet

@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-simple_logger = "1.11"
+simple_logger = {version = "1.13", features = ["stderr"]}
 clap = "2.33"
 libc = "0.2"
 uberall = { path = "uberall", version = "0.1" }

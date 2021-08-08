@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use crate::objectpath::ObjectPath;
 use crate::prelude::*;
+use std::error::Error;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 
@@ -52,7 +53,7 @@ impl fmt::Debug for Identifier {
 }
 
 impl TryFrom<&Flipbase64> for IdentifierBin {
-    type Error = anyhow::Error;
+    type Error = Box<dyn Error>;
 
     fn try_from(base64: &Flipbase64) -> Result<Self> {
         use io::Read;
@@ -69,7 +70,7 @@ impl TryFrom<&Flipbase64> for IdentifierBin {
 }
 
 impl TryFrom<&Flipbase64> for IdentifierKind {
-    type Error = anyhow::Error;
+    type Error = Box<dyn Error>;
 
     fn try_from(base64: &Flipbase64) -> Result<Self> {
         use io::Read;
@@ -86,25 +87,27 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
 
 impl Identifier {
     pub fn ensure_dir(&self) -> Result<()> {
-        ensure!(
-            self.object_type() == ObjectType::Directory,
-            ObjectStoreError::ObjectType {
+        if self.object_type() == ObjectType::Directory {
+            Ok(())
+        } else {
+            Err(ObjectStoreError::ObjectType {
                 have: self.object_type(),
-                want: ObjectType::Directory
-            },
-        );
-        Ok(())
+                want: ObjectType::Directory,
+            }
+            .into())
+        }
     }
 
     pub fn ensure_file(&self) -> Result<()> {
-        ensure!(
-            self.object_type() == ObjectType::File,
-            ObjectStoreError::ObjectType {
+        if self.object_type() == ObjectType::File {
+            Ok(())
+        } else {
+            Err(ObjectStoreError::ObjectType {
                 have: self.object_type(),
-                want: ObjectType::File
-            },
-        );
-        Ok(())
+                want: ObjectType::File,
+            }
+            .into())
+        }
     }
 
     pub(crate) fn from_binary(kind: IdentifierKind, binary: IdentifierBin) -> Identifier {

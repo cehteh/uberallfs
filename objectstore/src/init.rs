@@ -31,15 +31,13 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
 
             if objectstore_dir.is_file() {
                 if !force {
-                    return Err(Error::from(ObjectStoreError::ObjectStoreExists(dir.into())));
+                    return Err(ObjectStoreError::ObjectStoreExists(dir.into()).into());
                 }
             } else if dir.read_dir()?.next().is_some() {
-                return Err(Error::from(ObjectStoreError::ObjectStoreForeignExists(
-                    dir.into(),
-                )));
+                return Err(ObjectStoreError::ObjectStoreForeignExists(dir.into()).into());
             }
         } else {
-            return Err(Error::from(ObjectStoreError::ObjectStoreNoDir(dir.into())));
+            return Err(ObjectStoreError::ObjectStoreNoDir(dir.into()).into());
         }
     }
 

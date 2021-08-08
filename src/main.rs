@@ -2,8 +2,6 @@
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
 
-use anyhow::Result;
-
 use libc;
 
 mod optargs;
@@ -22,7 +20,7 @@ fn platform_init() {
     }
 }
 
-fn main() -> Result<()> {
+fn main() {
     platform_init();
     let matches = uberallfs_optargs()
         .setting(AppSettings::SubcommandRequired)
@@ -33,13 +31,15 @@ fn main() -> Result<()> {
     init_logging(&matches);
 
     //TODO: error explain function
-    match matches.subcommand() {
+    if let Err(err) = match matches.subcommand() {
         ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
         ("fuse", Some(sub_m)) => fuse::cmd(sub_m),
-
         (name, _) => {
             unimplemented!("subcommand '{}'", name)
         }
+    } {
+        println!("Error in main: {}", err.description());
+        std::process::exit(1);
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use std::ffi::OsString;
+use thiserror::Error;
 
 use crate::identifier_kind;
 
@@ -51,5 +52,5 @@ pub enum ObjectStoreError {
     IoError(#[from] std::io::Error),
 
     #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    Other(#[from] Box<dyn std::error::Error>),
 }

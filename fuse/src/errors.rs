@@ -19,5 +19,5 @@ pub enum ObjectStoreError {
     IOError(#[from] std::io::Error),
 
     #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    Other(#[from] Box<dyn std::error::Error>),
 }

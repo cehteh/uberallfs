@@ -75,7 +75,7 @@ impl ObjectImpl {
                 objectstore.create_directory(identifier, None, DirectoryPermissions::new().full())
             }
 
-            _ => Err(Error::from(ObjectStoreError::UnsupportedObjectType)),
+            _ => Err(ObjectStoreError::UnsupportedObjectType.into()),
         }
     }
 }

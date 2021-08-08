@@ -33,16 +33,21 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         trace!("mkdir src: {:?}/{:?}", src, remaining.as_os_str());
 
         if remaining.components().next() == None {
-            bail!(ObjectStoreError::ObjectExists)
+            return Err(ObjectStoreError::ObjectExists.into());
         }
-        assert_eq!(remaining.components().count(), 1, "TODO: parent dir handling");
+        assert_eq!(
+            remaining.components().count(),
+            1,
+            "TODO: parent dir handling"
+        );
 
         let object = match matches.value_of("SOURCE") {
             Some(_base64) => {
                 if acl.is_some() {
-                    bail!(ObjectStoreError::OptArgError(String::from(
-                        "ACL can only be used with new objects"
-                    )));
+                    return Err(ObjectStoreError::OptArgError(String::from(
+                        "ACL can only be used with new objects",
+                    ))
+                    .into());
                 };
                 unimplemented!("use existing object")
             }
@@ -62,7 +67,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         //FIXME: remove object when failed and not from SOURCE
         objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))?;
     } else {
-        bail!(ObjectStoreError::OptArgError(String::from("PATH foo")))
+        return Err(ObjectStoreError::OptArgError(String::from("PATH foo")).into());
     }
 
     Ok(())

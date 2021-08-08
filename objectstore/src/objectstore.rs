@@ -58,10 +58,9 @@ impl ObjectStore {
     /// Opens an ObjectStore at the given path.
     pub fn open(dir: &Path) -> Result<ObjectStore> {
         let version = Self::get_version(dir)?;
-        ensure!(
-            version == crate::VERSION,
-            ObjectStoreError::UnsupportedObjectStore(version)
-        );
+        if version != crate::VERSION {
+            return Err(ObjectStoreError::UnsupportedObjectStore(version).into());
+        }
 
         let handle = Dir::open(dir)?;
         let objects = handle.sub_dir("objects")?;
@@ -96,9 +95,10 @@ impl ObjectStore {
             trace!("root: {:?}", root_name);
             Identifier::from_flipbase64(Flipbase64(root_name.as_bytes().try_into()?))
         } else {
-            bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                "root directory not found"
-            )))
+            return Err(ObjectStoreError::ObjectStoreFatal(String::from(
+                "root directory not found",
+            ))
+            .into());
         }
     }
 
@@ -107,9 +107,10 @@ impl ObjectStore {
         trace!("prefix: {:?}", abbrev);
         match abbrev.len() {
             len if !(4..=44).contains(&len) => {
-                bail!(ObjectStoreError::InvalidIdentifier(String::from(
+                return Err(ObjectStoreError::InvalidIdentifier(String::from(
                     "abbrevitated identifiers must be between 4 to 44 characters in length",
-                )))
+                ))
+                .into());
             }
             len if len == 44 => {
                 let path = objectpath::from_bytes(&abbrev.as_bytes()[..2]).join(abbrev);
@@ -129,7 +130,7 @@ impl ObjectStore {
                         if found == None {
                             found = Some(OsString::from(entry.file_name()));
                         } else {
-                            bail!(ObjectStoreError::IdentifierAmbiguous(abbrev.into()));
+                            return Err(ObjectStoreError::IdentifierAmbiguous(abbrev.into()).into());
                         }
                     }
                 }
@@ -179,9 +180,9 @@ impl ObjectStore {
                         objectpath::from_bytes(captures.get(2).unwrap().as_bytes())
                     )
                 } else {
-                    bail!(ObjectStoreError::ObjectStoreFatal(String::from(
-                        "Invalid Path"
-                    )))
+                    return Err(
+                        ObjectStoreError::ObjectStoreFatal(String::from("Invalid Path")).into(),
+                    );
                 };
 
             path.normalize()?;
@@ -299,7 +300,7 @@ impl ObjectStore {
 
         self.objects
             .symlink(source.as_os_str(), dest.as_os_str())
-            .with_context(|| "failed to symlink new dir")
+            .map_err(|e| e.into())
     }
 
     // open dir is only for read, no access type needed
@@ -356,7 +357,7 @@ impl ObjectStore {
         self.objects.remove_file("root").ok();
         self.objects
             .symlink("root", path.as_os_str())
-            .with_context(|| "failed to symlink root object")
+            .map_err(|e| e.into())
     }
 }
 

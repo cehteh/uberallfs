@@ -30,7 +30,7 @@ impl ObjectPath for PathBuf {
             if p != "." {
                 if p == ".." {
                     if !new_path.pop() {
-                        bail!(ObjectStoreError::NoParent)
+                        return Err(ObjectStoreError::NoParent.into());
                     }
                 } else {
                     new_path.push(p);

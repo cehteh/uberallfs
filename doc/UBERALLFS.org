@@ -237,7 +237,7 @@ functional yet.
      can be sparse/incomplete with not yet synchronized data.
 
 **** part
-     WIP: parts of blobs with own identifiers.
+     PLANNED: parts of blobs with own identifiers.
 
 *** Identifier Types
 
@@ -347,7 +347,7 @@ functional yet.
 
       Directories in the objectstore refer to the contained objects. This is implemented with
       some special marked symlink which is the flipbase64 identifier prefixed with
-      ~//uberallfs//~.  This leverages the underlying filesystem semantics for lookup and
+      ~.uberallfs.~.  This leverages the underlying filesystem semantics for lookup and
       other operations.
 
 # ***** Files
@@ -379,7 +379,7 @@ functional yet.
    Data must not compromise the global security of the filesystem. The Objectstore itself runs
    as single user and uses permissions only to enforce the basic requirements (immutable
    objects become readonly and so on). Actual permission/access checks are managed by the
-   outward facing VFS Api.
+   outward facing VFS Api. This ensures security across the global network.
 
 ** VFS
   :PROPERTIES:
@@ -470,7 +470,7 @@ functional yet.
 
 ** Security Implications
 
-*** replay attack
+*** Replay Attack
 
     TBD: in short one who once had (administrative) access to the object can replay that old
     version of the metadata under some conditions since the 'trail' and generation count can
@@ -488,18 +488,19 @@ functional yet.
     enough they limit the time window in which such an attack can be done and constrain the
     necessary lifetime for signature revocations.
 
-*** malicious object mutation
+    # TODO: can anything better be done?
+
+*** Malicious Object Mutation
 
     Can not happen because the token will never be given to a node that won't have write access.
 
-      
-*** privilege escalation
+*** Privilege Escalation
 
 
       
 *** Object persistence
       
-
+*** Collisions
     
 
 ** Concise Permissions
@@ -510,6 +511,9 @@ functional yet.
    These permissions are mapped onto the available permissions of the target operating
    system. Permissions are tied to (lists of) public keys. There are no users and groups
    otherwise. There is one special (all zero?) Key which means 'anyone'.
+
+   The local system/VFS layer maps Keys to local users to allow a straightforward view of the
+   filesystem contents.
 
    A permission which would allow full access (including deleting/overwriting) all data also
    allows a node to take authority over an object. Nodes which can't gain authority over an
@@ -555,17 +559,23 @@ functional yet.
       Listing is filtered to content where one has authority for.
     * add ::
       Add new objects.
+      Implies 'list'.
     * add-authoritative ::
       Only add objects where one is authoritative for.
+      Implies 'list-authorative'
     * add-anonymous ::
       Add anonymous objects.
+      Implies 'list-accessible'.
     * rename ::
       Rename an object within the same directory. Moving objects across directories are
       handled like add/delete on each directory.
+      Implies 'list'.
     * rename-authoritative ::
       Rename an object within the same directory where one is authoritative for.
+      Implies 'list-authorative'.
     * rename-anonymous ::
       Rename an anonymous object within the same directory.
+      Implies 'list-accessible'.
     * delete ::
       Delete any object.
       This is the *authoritative* permission.
@@ -577,7 +587,13 @@ functional yet.
     Further rules can be defined how objects are created, what extra permissions and keys
     apply (inherit from directory,..)
 
-# brainfart: have lists: require/accept/reject as inheritance rules per file, per dir
+    To prevent collisions, the 'add' and 'rename' permissions imply the necessary 'list'
+    permissions that would make the destination visible. To successfully add or rename a file
+    into an existing name one would need the permission to delete the old content as well.
+
+    # TODO: shall these implicit permissions be explicit added/visible?
+
+    # brainfart: have lists: require/accept/reject as inheritance rules per file, per dir
 
 *** Permission inheritance
 
@@ -614,7 +630,7 @@ functional yet.
   :CUSTOM_ID: ead96b87-abaf-43e6-89a8-111b9a8799d3
   :END:
 
-  WIP: Envisioned usage
+  Envisioned usage, work in progress.
 
   Examples here using defaults for most options. Defaults should always be the be safe option.
 
@@ -809,7 +825,7 @@ functional yet.
 
        * Any other node which references this object should poll the object within this grace
          time. When the authoritative node responds that the object ought to be deleted then
-         * Node without full access are advised to synchronize the object
+         * Node without full access may synchronize the object
          * Nodes with full access are advised to adopt the object.
            * Once adopted and all data is transferred the *data* can deleted. Metadata (trail)
              needs to stay alive until the grace time is expired.
@@ -817,5 +833,19 @@ functional yet.
        This grace time can be exponential, starting from for example 30 seconds, doubling on
        every expire where the object is still in use up to some upper limit.
 
+* Rust Notes
+
+** Error handling
+   TBD
+   
+** Logging
+   TBD, which logging lib?
+
+   what to log?
+
+** Prelude
+
+   log
+   
 * Ideas
 

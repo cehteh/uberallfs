@@ -22,15 +22,13 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     };
 
     let (src, remaining) = objectstore.path_lookup(
-        &matches
-            .value_of_os("PATH")
-            .map(PathBuf::from).unwrap(),
+        &matches.value_of_os("PATH").map(PathBuf::from).unwrap(),
         None,
     )?;
     src.ensure_dir()?;
 
     if !remaining.as_os_str().is_empty() {
-        trace!("mkdir src: {:?}/{:?}", src, remaining.as_os_str());
+        debug!("mkdir: {:?}/{:?}", src.as_os_str(), remaining.as_os_str());
 
         if remaining.components().next() == None {
             return Err(ObjectStoreError::ObjectExists.into());
@@ -62,12 +60,12 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
             .realize(&objectstore)?,
         };
 
-        trace!("mkdir dest: {:?}", &object.identifier);
+        trace!("identifier: {:?}", &object.identifier);
 
         //FIXME: remove object when failed and not from SOURCE
         objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))?;
     } else {
-        return Err(ObjectStoreError::OptArgError(String::from("PATH foo")).into());
+        return Err(io::Error::from(io::ErrorKind::AlreadyExists).into());
     }
 
     Ok(())

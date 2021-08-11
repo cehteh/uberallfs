@@ -45,12 +45,12 @@ impl ObjectStore {
 
         let mut version_str: String = String::new();
 
-        BufReader::new(OpenOptions::new().read(true).open(&version_name)?).read_line(&mut version_str)?;
+        BufReader::new(OpenOptions::new().read(true).open(&version_name)?)
+            .read_line(&mut version_str)?;
 
         version_str.pop();
 
         let version = version_str.parse::<u32>()?;
-        trace!("version: {}", version);
 
         Ok(version)
     }
@@ -58,6 +58,7 @@ impl ObjectStore {
     /// Opens an ObjectStore at the given path.
     pub fn open(dir: &Path) -> Result<ObjectStore> {
         let version = Self::get_version(dir)?;
+        debug!("open {:?}, version: {}", dir, version);
         if version != crate::VERSION {
             return Err(ObjectStoreError::UnsupportedObjectStore(version).into());
         }
@@ -167,17 +168,15 @@ impl ObjectStore {
             let (root, mut path) =
                 if let Some(captures) = PATH_RE.captures(path.as_os_str().as_bytes()) {
                     let root;
-                    let id: &OsStr = OsStrExt::from_bytes(
-                        if let Some(capture) = captures.get(1) {
-                            capture.as_bytes()
-                        } else {
-                            root = self.get_root_id()?;
-                            &root.id_base64().0
-                        }
-                    );
+                    let id: &OsStr = OsStrExt::from_bytes(if let Some(capture) = captures.get(1) {
+                        capture.as_bytes()
+                    } else {
+                        root = self.get_root_id()?;
+                        &root.id_base64().0
+                    });
                     (
                         self.identifier_lookup(id)?,
-                        objectpath::from_bytes(captures.get(2).unwrap().as_bytes())
+                        objectpath::from_bytes(captures.get(2).unwrap().as_bytes()),
                     )
                 } else {
                     return Err(
@@ -198,14 +197,13 @@ impl ObjectStore {
         path: PathBuf,
         _parents: Option<&mut Vec<Identifier>>,
     ) -> Result<(Identifier, PathBuf)> {
-        trace!("traverse: {:?}", &path);
         //TODO: track parents
         let mut out = PathBuf::new();
 
         let mut still_going = true;
         for p in path.iter() {
             trace!("traverse element: {:?}", &p);
-            let subobject = SubObject(&root, p);
+            let subobject = SubObject(&root, &p);
             if still_going {
                 match self.sub_object_id(&subobject) {
                     Ok(r) => {
@@ -220,6 +218,7 @@ impl ObjectStore {
                     }
                 }
             } else {
+                trace!("traverse: {:?}", &path);
                 out.push(p);
             }
         }
@@ -232,9 +231,8 @@ impl ObjectStore {
         sub_object.0.ensure_dir()?;
 
         let r = self.objects.read_link(&sub_object.to_pathbuf())?;
-
         Identifier::from_flipbase64(Flipbase64(
-            r.as_os_str().as_bytes()[crate::RESERVED_PREFIX.len()..].try_into()?,
+            r.as_os_str().as_bytes()[crate::RESERVED_PREFIX.len() + 1..].try_into()?,
         ))
     }
 

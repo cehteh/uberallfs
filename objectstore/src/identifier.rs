@@ -142,6 +142,10 @@ impl Identifier {
         &self.base64
     }
 
+    pub(crate) fn as_os_str(&self) -> &OsStr {
+        &OsStr::from_bytes(&self.base64.0[..])
+    }
+
     pub(crate) fn id_bin(&self) -> IdentifierBin {
         unsafe { (&self.base64).try_into().unchecked_unwrap() }
     }

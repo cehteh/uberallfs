@@ -43,8 +43,7 @@ impl UberallFS {
         ];
         options.push(MountOption::AutoUnmount); //TODO: optarg?
 
-        let (identifier, none) = self.objectstore.path_lookup(root.map(From::from), None)?;
-        assert_eq!(none, None);
+        let identifier = self.vfs.path_lookup(0, Path::new(root))?;
 
         self.inodedb.store(1, identifier);
         //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino

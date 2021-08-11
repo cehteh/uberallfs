@@ -87,6 +87,12 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 pub(crate) fn init(dir: &Path) -> Result<()> {
     create_dir_all(dir)?;
 
+    debug!(
+        "Initialize objectstore in {:?}, version {}",
+        dir,
+        crate::VERSION
+    );
+
     // initialize objectstore structure
     let mut objectstore_dir = PathBuf::from(dir);
     objectstore_dir.push("config");

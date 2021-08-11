@@ -52,14 +52,29 @@ fn plumbing_basic() {
         .call_args(["-d", "-v", "objectstore", "ubatest", "init"])
         .assert_success();
     uberallfs
+        .call_args(["-d", "-v", "objectstore", "ubatest", "mkdir", "/"])
+        .assert_exitcode(libc::EEXIST);
+    uberallfs
         .call_args(["-d", "-v", "objectstore", "ubatest", "mkdir", "/testdir"])
         .assert_success();
+    uberallfs
+        .call_args(["-d", "-v", "objectstore", "ubatest", "mkdir", "/testdir"])
+        .assert_exitcode(libc::EEXIST);
     uberallfs
         .call_args(["-d", "-v", "objectstore", "ubatest", "show", "/testdir"])
         .assert_success();
     //PLANNED: -p is not implemented yet
     //uberallfs.call(["-d", "-v", "objectstore", "ubatest", "mkdir", "-p", "/test/dir"]);
-    //FIXME: uberallfs.fail(["-d", "-v", "objectstore", "ubatest", "show", "/doesnotexist"]);
+    uberallfs
+        .call_args([
+            "-d",
+            "-v",
+            "objectstore",
+            "ubatest",
+            "show",
+            "/doesnotexist",
+        ])
+        .assert_failure();
     uberallfs
         .call_args(["-d", "-v", "objectstore", "ubatest", "show", "hasnoslash"])
         .assert_failure();

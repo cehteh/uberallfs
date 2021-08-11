@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate clap;
 use clap::{AppSettings, ArgMatches};
+use std::error::Error;
+use std::io;
 
 use libc;
 
@@ -20,6 +22,17 @@ fn platform_init() {
     }
 }
 
+fn error_to_exitcode(error: Box<dyn Error>) -> i32 {
+    error
+        .downcast::<io::Error>()
+        .map_or(libc::EXIT_FAILURE, |e| {
+            e.raw_os_error().unwrap_or(match e.kind() {
+                io::ErrorKind::AlreadyExists => libc::EEXIST,
+                _ => todo!("implement for kind {:?}", e.kind()),
+            })
+        })
+}
+
 fn main() {
     platform_init();
     let matches = uberallfs_optargs()
@@ -30,7 +43,6 @@ fn main() {
 
     init_logging(&matches);
 
-    //TODO: error explain function
     if let Err(err) = match matches.subcommand() {
         ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
         ("fuse", Some(sub_m)) => fuse::cmd(sub_m),
@@ -38,8 +50,10 @@ fn main() {
             unimplemented!("subcommand '{}'", name)
         }
     } {
-        println!("Error in main: {}", err.description());
-        std::process::exit(1);
+        log::error!("Error: {}", &err);
+        std::process::exit(error_to_exitcode(err));
+    } else {
+        log::info!("OK");
     }
 }
 

@@ -43,7 +43,7 @@ pub const RESERVED_PREFIX: [u8; 11] = *b".uberallfs.";
 pub fn cmd(matches: &ArgMatches) -> Result<()> {
     let dir = matches.value_of_os("DIRECTORY").expect("infallible");
 
-    trace!("dir: {:?}", dir);
+    trace!("objectstore directory: {:?}", dir);
 
     match matches.subcommand() {
         ("init", Some(sub_m)) => init::opt_init(dir, sub_m),

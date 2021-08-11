@@ -24,4 +24,4 @@ cd "$test_dir"
 ulimit -S -v $MEMORY_KB -t $TIMEOUT_SECS
 # install test with ln -s .branchlocal/*.sh .test_runner
 sh "$WORKTREE_DIR/.test_runner" 2>&1 | tee test.log
-exit $?
+exit $!

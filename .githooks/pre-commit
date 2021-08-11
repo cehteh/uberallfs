@@ -21,7 +21,13 @@ fi
 git archive "$(git write-tree)" --prefix="$test_dir/" | tar xf -
 cd "$test_dir"
 
-ulimit -S -v $MEMORY_KB -t $TIMEOUT_SECS
-# install test with ln -s .branchlocal/*.sh .test_runner
-sh "$WORKTREE_DIR/.test_runner" 2>&1 | tee test.log
-exit $!
+#TODO: globbing on branch names
+buildscript=$(rgrep -l "branch:$(git branch --show-current)" .branchlocal/)
+
+echo "buildscript = $buildscript"
+
+if [[ "$buildscript" ]]; then
+    ulimit -S -v $MEMORY_KB -t $TIMEOUT_SECS
+    bash "$buildscript" | tee test.log
+    exit $(tail -1 test.log)
+fi

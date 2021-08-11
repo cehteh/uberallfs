@@ -9,6 +9,7 @@ pub fn uberallfs_optargs() -> App<'static, 'static> {
             Arg::with_name("debug")
                 .short("d")
                 .long("debug")
+                .multiple(true)
                 .help("Enable debug mode"),
         )
         .arg(

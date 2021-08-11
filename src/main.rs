@@ -61,10 +61,14 @@ fn init_logging(matches: &ArgMatches) {
     let mut verbosity_level = 1;
 
     if matches.is_present("quiet") {
-        verbosity_level = 0
+        verbosity_level = 0;
     }
-    if matches.is_present("debug") {
-        verbosity_level = 4;
+
+    // allow -dd for 'trace' level
+    match matches.occurrences_of("debug") {
+        1 => verbosity_level = 4,
+        2 => verbosity_level = 5,
+        _ => {}
     }
 
     verbosity_level += matches.occurrences_of("verbose");

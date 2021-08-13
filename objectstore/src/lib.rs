@@ -18,6 +18,7 @@ mod objectpath;
 mod objectstore;
 mod permissions;
 mod rev_cursor;
+mod vfs;
 
 mod init;
 mod mkdir;
@@ -30,6 +31,8 @@ pub use identifier::{Flipbase64, Identifier, IdentifierBin};
 pub use identifier_kind::{Mutability, ObjectType, SharingPolicy};
 pub use object::Object;
 pub use permissions::{PermissionCheck, PermissionController};
+
+pub use vfs::VirtualFileSystem;
 
 //PLANNED: mockup types defined and exported that dont have a implementation yet
 pub type UserId = u32;

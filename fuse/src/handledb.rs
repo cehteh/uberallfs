@@ -53,7 +53,7 @@ impl HandleDb {
     /// get handle by index
     pub fn get(&mut self, fh: u64) -> Option<Arc<Mutex<Handle>>> {
         let fh = fh as usize;
-        let mut handles = self.handles.lock();
+        let handles = self.handles.lock();
         match handles.get(fh) {
             Some(Valid(handle)) => Some(handle.clone()),
             _ => None,

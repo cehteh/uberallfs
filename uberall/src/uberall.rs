@@ -1,12 +1,9 @@
 use crate::prelude::*;
 
-use rand::prelude::*;
 use rand::distributions::Standard;
+use rand::prelude::*;
 use rand_core::OsRng;
 use rand_hc::Hc128Rng;
-
-use parking_lot::Mutex;
-use std::sync::Arc;
 
 /// Shared Application state
 pub struct UberAll {
@@ -31,6 +28,3 @@ impl UberAll {
     // up when any queue hits lowwater. trylock these round robin to acquire randoms.
     // keep start index for roundrobin in a atomic counter
 }
-
-
-

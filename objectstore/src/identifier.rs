@@ -1,9 +1,9 @@
-use std::path::PathBuf;
 use crate::objectpath::ObjectPath;
 use crate::prelude::*;
 use std::error::Error;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
+use std::path::PathBuf;
 
 use core::mem::MaybeUninit;
 use std::convert::TryFrom;

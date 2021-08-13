@@ -33,8 +33,8 @@ impl UberallFS {
     pub fn mount(
         mut self,
         mountpoint: &Path,
-        offline: bool,
-        root: Option<&OsStr>,
+        _offline_todo: bool,
+        root: &OsStr,
         _options_planned: Option<Vec<String>>,
     ) -> Result<()> {
         let mut options = vec![

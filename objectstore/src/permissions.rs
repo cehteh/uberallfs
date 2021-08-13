@@ -7,7 +7,7 @@ use crate::{Identifier, Mutability, ObjectStore, ObjectType, SharingPolicy, User
 /// Defines when authenticated keys expire and will be removed.
 ///  * Never:: keeps the keys forever
 ///  * Exact:: The key will expire at the given time
-///  * Idle:: The will expire when it wasn't used for 'idle_time'
+///  * Idle:: The will expire when it was not used for 'idle_time'
 enum KeyExpirePolicy {
     Never,
     Exact {
@@ -42,7 +42,9 @@ impl PermissionController {
         }
     }
 
+    //PLANNED: improve gc, can expire things at lockup/hash-collisions already
     fn garbage_collect(&mut self) {
+        //TODO: gc test
         self.gc_countdown -= 1;
         if self.gc_countdown == 0 {
             let now = time::Instant::now();
@@ -51,7 +53,7 @@ impl PermissionController {
                 match *expire {
                     Never => true,
                     Exact { at } => at > now,
-                    Idle { at, idle_time } => at > now,
+                    Idle { at, idle_time: _ } => at > now,
                 }
             });
             // gc every half capacity (-1), but no more frequent than every 63th insert
@@ -65,11 +67,11 @@ impl PermissionController {
     //+ challenge succeeds then the Pubkey is stored as being authorized. This allowes for
     //+ handling all private key handling on a dedicated process outside of the vfs instance.
     //    pub fn auth_key(uid, PubKey, expire_policy) -> Result<Challenge> {
-    //        unimplemented!()
+    //        todo!()
     //    }
     //    pub fn add_key(Response) {
     //        self.garbage_collect();
-    //        unimplemented!()
+    //        todo!()
     //    }
 
     pub fn permission_check<'a>(
@@ -101,7 +103,10 @@ impl PermissionCheck<'_> {
     pub fn read(&self) -> io::Result<()> {
         match self.identifier.components() {
             (_, Private | Anonymous, _) => Ok(()),
-            (_, PublicAcl, _) => unimplemented!(),
+            (_, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -110,7 +115,10 @@ impl PermissionCheck<'_> {
         match self.identifier.components() {
             (File, Private, _) => Ok(()),
             (File, _, Immutable) => Err(io::Error::from(io::ErrorKind::PermissionDenied)),
-            (File, PublicAcl, _) => unimplemented!(),
+            (File, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -119,7 +127,10 @@ impl PermissionCheck<'_> {
         match self.identifier.components() {
             (File, Private, _) => Ok(()),
             (File, _, Immutable) => Err(io::Error::from(io::ErrorKind::PermissionDenied)),
-            (File, PublicAcl, _) => unimplemented!(),
+            (File, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -127,7 +138,10 @@ impl PermissionCheck<'_> {
     pub fn list(&self) -> io::Result<()> {
         match self.identifier.components() {
             (Directory, Private | Anonymous, _) => Ok(()),
-            (Directory, PublicAcl, _) => unimplemented!(),
+            (Directory, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -136,7 +150,10 @@ impl PermissionCheck<'_> {
         match self.identifier.components() {
             (Directory, Private, _) => Ok(()),
             (Directory, _, Immutable) => Err(io::Error::from(io::ErrorKind::PermissionDenied)),
-            (Directory, PublicAcl, _) => unimplemented!(),
+            (Directory, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -145,7 +162,10 @@ impl PermissionCheck<'_> {
         match self.identifier.components() {
             (Directory, Private, _) => Ok(()),
             (Directory, _, Immutable) => Err(io::Error::from(io::ErrorKind::PermissionDenied)),
-            (Directory, PublicAcl, _) => unimplemented!(),
+            (Directory, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }
@@ -154,7 +174,10 @@ impl PermissionCheck<'_> {
         match self.identifier.components() {
             (Directory, Private, _) => Ok(()),
             (Directory, _, Immutable) => Err(io::Error::from(io::ErrorKind::PermissionDenied)),
-            (Directory, PublicAcl, _) => unimplemented!(),
+            (Directory, PublicAcl, _) => Err(io::Error::new(
+                io::ErrorKind::Other,
+                "//TODO: Unimplemented",
+            )),
             _ => Err(io::Error::from(io::ErrorKind::InvalidInput)),
         }
     }

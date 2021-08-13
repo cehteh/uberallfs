@@ -108,10 +108,10 @@ impl ObjectStore {
         trace!("prefix: {:?}", abbrev);
         match abbrev.len() {
             len if !(4..=44).contains(&len) => {
-                return Err(ObjectStoreError::InvalidIdentifier(String::from(
+                Err(ObjectStoreError::InvalidIdentifier(String::from(
                     "abbrevitated identifiers must be between 4 to 44 characters in length",
                 ))
-                .into());
+                .into())
             }
             len if len == 44 => {
                 let path = objectpath::from_bytes(&abbrev.as_bytes()[..2]).join(abbrev);
@@ -139,7 +139,7 @@ impl ObjectStore {
 
                 Identifier::from_flipbase64(Flipbase64(
                     found
-                        .ok_or(ObjectStoreError::ObjectNotFound(abbrev.into()))?
+                        .ok_or_else(|| ObjectStoreError::ObjectNotFound(abbrev.into()))?
                         .as_bytes()
                         .try_into()?,
                 ))
@@ -203,7 +203,7 @@ impl ObjectStore {
         let mut still_going = true;
         for p in path.iter() {
             trace!("traverse element: {:?}", &p);
-            let subobject = SubObject(&root, &p);
+            let subobject = SubObject(&root, p);
             if still_going {
                 match self.sub_object_id(&subobject) {
                     Ok(r) => {
@@ -238,18 +238,18 @@ impl ObjectStore {
 
     pub(crate) fn open_metadata(
         &self,
-        identifier: &Identifier,
-        metadata: Meta,
-        access: FileAccess,
+        _identifier: &Identifier,
+        _metadata: Meta,
+        _access: FileAccess,
     ) -> Result<Handle> {
         unimplemented!()
     }
 
     pub(crate) fn create_metadata(
         &self,
-        identifier: &Identifier,
-        metadata: Meta,
-        perm: FilePermissions, // readwrite or readonly for immutable metadata
+        _identifier: &Identifier,
+        _metadata: Meta,
+        _perm: FilePermissions, // readwrite or readonly for immutable metadata
     ) -> Result<Handle> {
         //access: FileAccess, -> always readwrite
         unimplemented!()
@@ -257,26 +257,30 @@ impl ObjectStore {
 
     pub(crate) fn open_link(
         &self,
-        object: SubObject,
-        access: FileAccess,
-        perm: FilePermissions,
-        attr: FileAttributes,
+        _object: SubObject,
+        _access: FileAccess,
+        _perm: FilePermissions,
+        _attr: FileAttributes,
     ) -> Result<Handle> {
         //Self::ensure_dir(object.0)?;
         unimplemented!()
     }
 
-    pub(crate) fn open_file(&self, identifier: &Identifier, access: FileAccess) -> Result<Handle> {
+    pub(crate) fn open_file(
+        &self,
+        _identifier: &Identifier,
+        _access: FileAccess,
+    ) -> Result<Handle> {
         unimplemented!()
     }
 
     pub(crate) fn create_file(
         &self,
         identifier: &Identifier,
-        parent: Option<SubObject>,
-        access: FileAccess,
-        perm: FilePermissions,
-        attr: FileAttributes,
+        _parent: Option<SubObject>,
+        _access: FileAccess,
+        _perm: FilePermissions,
+        _attr: FileAttributes,
     ) -> Result<Handle> {
         identifier.ensure_file()?;
         //Self::ensure_dir(object.0);
@@ -290,21 +294,23 @@ impl ObjectStore {
         let mut dest = PathBuf::new();
         dest.push_link(identifier);
 
-        trace!(
-            "mkdir link: {:?} -> {:?}",
-            source.as_os_str(),
-            dest.as_os_str()
-        );
+        trace!("link: {:?} -> {:?}", source.as_os_str(), dest.as_os_str());
 
         self.objects
             .symlink(source.as_os_str(), dest.as_os_str())
             .map_err(|e| e.into())
     }
 
-    // open dir is only for read, no access type needed
-    pub(crate) fn open_directory(&self, identifier: &Identifier) -> Result<Handle> {
-        identifier.ensure_dir()?;
-        unimplemented!()
+    pub fn open_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
+        self.objects
+            .sub_dir(identifier.to_pathbuf().as_path())
+            .map(Handle::Dir)
+    }
+
+    pub fn list_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
+        self.objects
+            .list_dir(identifier.to_pathbuf().as_path())
+            .map(Handle::DirIter)
     }
 
     pub(crate) fn create_directory(
@@ -330,11 +336,19 @@ impl ObjectStore {
         Ok(())
     }
 
-    pub(crate) fn change_access(&self, identifier: &Identifier, access: FileAccess) -> Result<()> {
+    pub(crate) fn change_access(
+        &self,
+        _identifier: &Identifier,
+        _access: FileAccess,
+    ) -> Result<()> {
         unimplemented!()
     }
 
-    pub(crate) fn change_attributes(&self, identifier: &Identifier, attr: FileAttributes) -> Result<()> {
+    pub(crate) fn change_attributes(
+        &self,
+        _identifier: &Identifier,
+        _attr: FileAttributes,
+    ) -> Result<()> {
         unimplemented!()
     }
 
@@ -506,7 +520,13 @@ impl DirectoryPermissions {
     }
 
     pub fn full(mut self) -> Self {
-        self.0 = self.0 | libc::S_IRUSR | libc::S_IRGRP | libc::S_IXUSR | libc::S_IXGRP | libc::S_IWUSR | libc::S_IWGRP;
+        self.0 = self.0
+            | libc::S_IRUSR
+            | libc::S_IRGRP
+            | libc::S_IXUSR
+            | libc::S_IXGRP
+            | libc::S_IWUSR
+            | libc::S_IWGRP;
         self
     }
 

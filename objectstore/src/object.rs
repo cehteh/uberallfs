@@ -1,10 +1,6 @@
 use crate::prelude::*;
 
-
-use crate::objectstore::{
-    DirectoryPermissions,
-    ObjectStore,
-};
+use crate::objectstore::{DirectoryPermissions, ObjectStore};
 //use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]

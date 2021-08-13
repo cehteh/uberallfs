@@ -4,13 +4,10 @@ use clap::{AppSettings, ArgMatches};
 use std::error::Error;
 use std::io;
 
-use libc;
-
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
 
 extern crate log;
-use log::LevelFilter;
 
 use simple_logger::SimpleLogger;
 

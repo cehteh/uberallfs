@@ -8,8 +8,9 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-simple_logger = {version = "1.13", features = ["stderr"]}
+fern = { version = "0.5", features = ["colored"] }
 clap = "2.33"
+chrono = "0.4"
 libc = "0.2"
 uberall = { path = "uberall", version = "0.1" }
 objectstore = { path = "objectstore", version = "0.1" }

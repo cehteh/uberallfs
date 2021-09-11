@@ -3,13 +3,10 @@ extern crate clap;
 use clap::{AppSettings, ArgMatches};
 use std::error::Error;
 use std::io;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
-
-extern crate log;
-
-use simple_logger::SimpleLogger;
 
 #[cfg(unix)]
 fn platform_init() {
@@ -80,8 +77,35 @@ fn init_logging(matches: &ArgMatches) {
         _ => Trace,
     };
 
-    SimpleLogger::new()
-        .with_level(verbosity_level)
-        .init()
-        .expect("Failed to initialize the logging System");
+    use fern::colors::Color::*;
+    let colors = fern::colors::ColoredLevelConfig::new()
+        .error(Red)
+        .warn(Yellow)
+        .info(Green)
+        .debug(Black)
+        .trace(BrightBlack);
+
+    let counter: AtomicU64 = AtomicU64::new(0);
+
+    let seq_num = move || counter.fetch_add(1, Ordering::SeqCst);
+
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            let thread_id = std::thread::current();
+            out.finish(format_args!(
+                "{:0>16}: {:>5}: {}: {}: {}",
+                seq_num(),
+                colors.color(record.level()),
+                thread_id.name().unwrap_or("UNKNOWN"),
+                record.target(),
+                message
+            ))
+        })
+        .level(verbosity_level)
+        .chain(std::io::stderr())
+        .chain(fern::log_file("uberallfs.log").expect("opening logfile ok"))
+        .apply()
+        .expect("initialized the logging system");
+
+    log::info!("START: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
 }

@@ -792,7 +792,69 @@ functional yet.
  #    $ uberallfs start ./directory
  #    $ uberallfs stop ./directory
  #    #+END_SRC
- 
+
+** Runtime Maintenance Commands
+
+*** pinning
+
+    * authorative
+      Pins an object to be locally available, possible with short lease times to allow others to
+      mutate it without proxying.
+    * non authorative
+      register at the current token holder that one wants to get a notification when the object changed (or is moved).
+      This has only session persistence.
+
+*** replication rules
+
+    Objects can hold a small list of peers where the data must be replicated.
+    There are different modes of operation:
+    N of M operations must succeed before returning, remaining are synced lazy
+    Operations are write, fsync, close.
+    The N of M can be required to be N different realms.
+
+*** drop/gc
+
+    frees memory by dropping non used (lazy atime) non owned objects.
+    may move owned objects away (asking some other node about taking over).
+
+*** sync
+
+    Fetches and syncronizes all date (before going offline)
+
+*** offline
+
+    turns the node into offline mode (with --timeout?)  it wont try to access other nodes even
+    when internet is up.  normally unnecessary because reachability is determined
+    automatically on a peer by peer base with some backoff mechanism.
+
+
+*** detach
+
+    explicitly detach objects, so that they can be locally changed even when offline but may later be merged
+
+*** merge
+
+    merge detached objects back. may need manual conflict resolution in case changes happened on both sides.
+
+*** config
+
+    what happens when offline and not owning an object
+    * On Read:
+      * old version available, just cant sync
+        * return stale data
+        * block (with timeout, then one of the next)
+        * EIO
+        * EACCESS
+      * data isn't locally available (or incomplete)
+        * block (with timeout, then one of the next)
+        * EIO
+        * EACCES
+    * On Write:
+      * block (with timeout, then one of the next)
+      * auto detach
+      * EIO
+      * EACCESS
+
 * Problems/Solutions
 
 ** Symlink escapes
@@ -802,7 +864,7 @@ functional yet.
    dangerous. For normal directory objects this becomes forbidden. The same is true for
    absolute symlinks.
 
-   This restriction can be removed for Private directories. Important note is that such
+   This restriction is be removed for Private entries. Important note is that such
    directories can not be changed into PublicAcl shared directories in presence of such
    symlinks.
 
@@ -830,8 +892,37 @@ functional yet.
            * Once adopted and all data is transferred the *data* can deleted. Metadata (trail)
              needs to stay alive until the grace time is expired.
 
-       This grace time can be exponential, starting from for example 30 seconds, doubling on
-       every expire where the object is still in use up to some upper limit.
+     * May also provide an discard command that really deletes an object without grace
+       time. Other nodes querying it then will get a 'EEXIST' and may decide how to go on
+       (revive or discard)
+
+** Reviving an Object
+
+   Eventually objects may get lost when an node takes ownership but is not reachable anymore.
+
+   Such an object can then be revived by quering the trail if it is possible to reconstruct
+   the last know state of the object. This may then be revived as 'detached' object or put
+   alife again under a new Identifier. This is then per-parent directory as the new identifier
+   is inserted there.
+
+   In the event that the initially unreachable node commes alive again, data must be merged
+   from there. The lost node is responsible for merging this. Possibly reestablishing the old
+   Identifier with the new content again.
+
+   Maybe mark new object metadata with a 'revived $oldidentifier', is this necessary?
+
+   Directories may have a flag that they are protected from 'careless' reviving because they
+   are intended as mountpoint -> list of nodes/expire that (may) mount them (authoratively only)
+
+*** The No-Parent Case
+
+    When mounting (authoratively) one needs to check that the dir didnt got revived by
+    querying possible buddies:
+    - walk trail/redunancy copies/authorative mount list
+
+** Worklog per node
+
+   limited in size and age
 
 * Rust Notes
 

@@ -6,6 +6,6 @@ edition = "2018"
 
 
 [dependencies]
-fuser = "0.8"
+fuser = "0.9"
 objectstore = { path = "../objectstore" }
 uberall = { path = "../uberall" }

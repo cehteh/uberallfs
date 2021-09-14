@@ -14,7 +14,7 @@ fuse = { path = "fuse", version = "0.1" }
 [dev-dependencies]
 tempfile = "3.2"
 bintest = "1.0"
-testcall = "1.0.0"
+testcall = "1.1.0"
 testpath = "0.1.1"
 lazy_static = "1.4"
 

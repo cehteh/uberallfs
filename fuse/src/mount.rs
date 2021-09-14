@@ -19,6 +19,8 @@ pub(crate) fn opt_mount(mountpoint: &OsStr, matches: &ArgMatches) -> Result<()> 
 
     trace!("objectstore: {:?}", objectstore_dir);
 
+    uberall::maybe_daemonize();
+
     UberallFS::new(objectstore_dir)?.mount(
         mountpoint,
         matches.is_present("offline"),

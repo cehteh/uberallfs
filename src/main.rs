@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate clap;
 use clap::{AppSettings, ArgMatches};
 use std::error::Error;
 use std::io;
@@ -7,6 +5,32 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
+
+fn main() {
+    platform_init();
+    let matches = uberallfs_optargs()
+        .setting(AppSettings::SubcommandRequired)
+        .subcommand(objectstore::optargs())
+        .subcommand(fuse::optargs())
+        .get_matches();
+
+    uberall::init_daemonize(&matches);
+
+    init_logging(&matches);
+
+    if let Err(err) = match matches.subcommand() {
+        ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
+        ("fuse", Some(sub_m)) => fuse::cmd(sub_m),
+        (name, _) => {
+            unimplemented!("subcommand '{}'", name)
+        }
+    } {
+        log::error!("{}", &err);
+        std::process::exit(error_to_exitcode(err));
+    } else {
+        log::info!("OK");
+    }
+}
 
 #[cfg(unix)]
 fn platform_init() {
@@ -25,30 +49,6 @@ fn error_to_exitcode(error: Box<dyn Error>) -> i32 {
                 _ => todo!("implement for kind {:?}", e.kind()),
             })
         })
-}
-
-fn main() {
-    platform_init();
-    let matches = uberallfs_optargs()
-        .setting(AppSettings::SubcommandRequired)
-        .subcommand(objectstore::optargs())
-        .subcommand(fuse::optargs())
-        .get_matches();
-
-    init_logging(&matches);
-
-    if let Err(err) = match matches.subcommand() {
-        ("objectstore", Some(sub_m)) => objectstore::cmd(sub_m),
-        ("fuse", Some(sub_m)) => fuse::cmd(sub_m),
-        (name, _) => {
-            unimplemented!("subcommand '{}'", name)
-        }
-    } {
-        log::error!("Error: {}", &err);
-        std::process::exit(error_to_exitcode(err));
-    } else {
-        log::info!("OK");
-    }
 }
 
 fn init_logging(matches: &ArgMatches) {
@@ -89,7 +89,7 @@ fn init_logging(matches: &ArgMatches) {
 
     let seq_num = move || counter.fetch_add(1, Ordering::SeqCst);
 
-    fern::Dispatch::new()
+    let mut logger = fern::Dispatch::new()
         .format(move |out, message, record| {
             let thread_id = std::thread::current();
             out.finish(format_args!(
@@ -102,10 +102,24 @@ fn init_logging(matches: &ArgMatches) {
             ))
         })
         .level(verbosity_level)
-        .chain(std::io::stderr())
-        .chain(fern::log_file("uberallfs.log").expect("opening logfile ok"))
-        .apply()
-        .expect("initialized the logging system");
+        // Always log to stderr, we may not dameonize
+        .chain(std::io::stderr());
+
+    if uberall::may_daemonize() {
+        let syslog_formatter = syslog::Formatter3164 {
+            facility: syslog::Facility::LOG_USER,
+            hostname: None,
+            process: "uberallfs".to_owned(),
+            pid: 0,
+        };
+        logger = logger.chain(syslog::unix(syslog_formatter).expect("syslog opened"));
+    }
+
+    if let Some(logfile) = matches.value_of_os("log-file") {
+        logger = logger.chain(fern::log_file(logfile).expect("opening logfile ok"));
+    }
+
+    logger.apply().expect("initialized the logging system");
 
     log::info!("START: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
 }

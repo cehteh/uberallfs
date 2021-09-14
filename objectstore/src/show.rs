@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
-use clap::ArgMatches;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
+use uberall::clap::ArgMatches;
 
 use std::ffi::OsStr;
 

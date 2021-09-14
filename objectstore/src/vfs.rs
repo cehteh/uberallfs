@@ -7,6 +7,8 @@ use std::sync::Arc;
 
 use openat::Metadata;
 
+use uberall::libc;
+
 use crate::{Identifier, ObjectStore, PermissionCheck, PermissionController, SubObject, UserId};
 
 #[cfg(unix)]

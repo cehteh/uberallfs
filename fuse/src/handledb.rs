@@ -3,7 +3,7 @@ use crate::prelude::*;
 use std::io;
 use std::sync::Arc;
 
-use parking_lot::Mutex;
+use uberall::{libc, parking_lot::Mutex};
 
 use objectstore::Handle;
 

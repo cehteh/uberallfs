@@ -3,7 +3,7 @@ use crate::prelude::*;
 use std::collections::hash_map::HashMap;
 use std::sync::Arc;
 
-use parking_lot::Mutex;
+use uberall::parking_lot::Mutex;
 
 use objectstore::Identifier;
 

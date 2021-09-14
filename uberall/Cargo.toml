@@ -5,14 +5,17 @@ authors = ["Christian Thäter <ct@pipapo.org>"]
 edition = "2018"
 
 [dependencies]
+chrono = "0.4"
+clap = "2.33"
+daemonize = "0.4"
+fern = { version = "0.5", features = ["colored", "syslog-4"] }
+lazy_static = "1.4"
+libc = "0.2"
 log = "0.4"
+once_cell = "1.8"
+parking_lot = "0.11"
 rand = "0.8"
 rand_core = "0.6"
 rand_hc = "0.3"
+syslog = "4"
 thiserror = "1.0"
-once_cell = "1.8"
-clap = "2.33"
-libc = "0.2"
-daemonize = "0.4"
-lazy_static = "1.4"
-parking_lot = "0.11"

@@ -1,4 +1,4 @@
-use clap::{App, AppSettings, Arg, SubCommand};
+use uberall::clap::{App, AppSettings, Arg, SubCommand};
 
 pub fn optargs() -> App<'static, 'static> {
     SubCommand::with_name("objectstore")

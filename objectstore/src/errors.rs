@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use std::ffi::OsString;
-use thiserror::Error;
+use uberall::thiserror::{self, Error};
 
 use crate::identifier_kind;
 

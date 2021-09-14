@@ -1,5 +1,14 @@
 mod prelude;
 mod uberall;
+pub use chrono;
+pub use clap;
+pub use fern;
+pub use lazy_static;
+pub use libc;
+pub use log;
+pub use parking_lot;
+pub use syslog;
+pub use thiserror;
 pub use uberall::UberAll;
 
 use clap::{AppSettings, ArgMatches};

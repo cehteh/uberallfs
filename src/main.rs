@@ -1,7 +1,11 @@
-use clap::{AppSettings, ArgMatches};
 use std::error::Error;
 use std::io;
 use std::sync::atomic::{AtomicU64, Ordering};
+use uberall::{
+    chrono,
+    clap::{AppSettings, ArgMatches},
+    fern, libc, log, syslog,
+};
 
 mod optargs;
 pub use self::optargs::uberallfs_optargs;
@@ -77,7 +81,7 @@ fn init_logging(matches: &ArgMatches) {
         _ => Trace,
     };
 
-    use fern::colors::Color::*;
+    use uberall::fern::colors::Color::*;
     let colors = fern::colors::ColoredLevelConfig::new()
         .error(Red)
         .warn(Yellow)

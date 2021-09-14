@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use uberall::clap::{self, App, Arg};
 
 pub fn uberallfs_optargs() -> App<'static, 'static> {
     App::new("uberallfs")

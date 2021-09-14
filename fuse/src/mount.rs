@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use clap::ArgMatches;
+use uberall::clap::{self, ArgMatches};
 
 use fuser::MountOption;
 use std::ffi::OsStr;

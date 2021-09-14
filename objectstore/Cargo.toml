@@ -7,18 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "2.33"
-log = "0.4"
-base64 = "0.13"
-sha2 = "0.9"
-#openat = "0.1"
-openat = { git = "https://github.com/cehteh/openat.git", branch = "master" }
-rand = "0.8"
-rand_core = "0.6"
-rand_hc = "0.3"
-libc = "0.2"
 unchecked_unwrap = "3.0"
-thiserror = "1.0"
+base64 = "0.13"
 regex = "1"
-lazy_static = "1.4"
+openat = { git = "https://github.com/cehteh/openat.git", branch = "master" }
 uberall = { path = "../uberall" }

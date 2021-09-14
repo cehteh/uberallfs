@@ -7,11 +7,9 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::prelude::RawFd;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
 
-use lazy_static::lazy_static;
 use openat::{Dir, Metadata};
 use regex::bytes::Regex;
-
-use uberall::UberAll;
+use uberall::{lazy_static::lazy_static, libc, UberAll};
 
 use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
 

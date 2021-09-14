@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
-use clap::ArgMatches;
 use std::path::PathBuf;
+use uberall::clap::ArgMatches;
 
 use std::ffi::OsStr;
 

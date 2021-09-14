@@ -1,7 +1,7 @@
 mod prelude;
 use crate::prelude::*;
 
-use clap::ArgMatches;
+use uberall::clap::{self, ArgMatches};
 
 mod optargs;
 pub use self::optargs::optargs;

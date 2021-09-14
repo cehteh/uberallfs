@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
 use std::collections::BTreeMap;
 use std::env::set_current_dir;
 use std::ffi::OsStr;
@@ -7,6 +5,7 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 use tempfile::TempDir;
+use uberall::{lazy_static::lazy_static, libc};
 
 use bintest::BinTest;
 

@@ -3,11 +3,10 @@
 mod prelude;
 use crate::prelude::*;
 
-use clap::ArgMatches;
+use uberall::{clap::ArgMatches, lazy_static, log};
 
 mod optargs;
 pub use self::optargs::optargs;
-extern crate lazy_static;
 
 mod errors;
 mod handle;

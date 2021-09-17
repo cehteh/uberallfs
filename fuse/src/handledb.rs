@@ -9,6 +9,7 @@ use objectstore::Handle;
 
 type NextFree = usize;
 
+#[derive(Debug)]
 enum Entry {
     Invalid(NextFree),
     Valid(Arc<Mutex<Handle>>),
@@ -16,6 +17,7 @@ enum Entry {
 
 use Entry::*;
 
+#[derive(Debug)]
 pub struct HandleDb {
     handles: Mutex<Vec<Entry>>,
     free_idx: NextFree, // linked list of free positions

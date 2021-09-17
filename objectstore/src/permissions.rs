@@ -8,6 +8,7 @@ use crate::{Identifier, Mutability, ObjectStore, ObjectType, SharingPolicy, User
 ///  * Never:: keeps the keys forever
 ///  * Exact:: The key will expire at the given time
 ///  * Idle:: The will expire when it was not used for 'idle_time'
+#[derive(Debug)]
 enum KeyExpirePolicy {
     Never,
     Exact {
@@ -19,13 +20,14 @@ enum KeyExpirePolicy {
     },
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 struct AuthenticatedEntry {
     uid: UserId,
     //PLANNED: pubkey: PublicKey,
 }
 
 /// stores authenticated keys
+#[derive(Debug)]
 pub struct PermissionController {
     objectstore: Arc<ObjectStore>,
     authenticated: HashMap<AuthenticatedEntry, KeyExpirePolicy>,

@@ -12,6 +12,7 @@ use uberall::libc;
 use crate::{Identifier, ObjectStore, PermissionCheck, PermissionController, SubObject, UserId};
 
 #[cfg(unix)]
+#[derive(Debug)]
 pub struct VirtualFileSystem {
     objectstore: Arc<ObjectStore>,
     permission_controller: PermissionController,

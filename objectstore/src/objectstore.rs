@@ -15,6 +15,7 @@ use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, O
 
 pub struct Meta;
 
+#[derive(Debug)]
 pub struct ObjectStore {
     #[allow(dead_code)]
     version: u32,

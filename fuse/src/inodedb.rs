@@ -20,6 +20,7 @@ impl Entry {
 }
 
 /// Relate local inode numbers to uberallfs identifiers
+#[derive(Debug)]
 pub(crate) struct InodeDb {
     //PLANNED: caches / reduce lock contention maybe array of Mutex<HashMap<...>>
     inode_to_identifier: Mutex<HashMap<u64, Arc<Entry>>>,

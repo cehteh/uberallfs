@@ -6,6 +6,7 @@ use rand_core::OsRng;
 use rand_hc::Hc128Rng;
 
 /// Shared Application state
+#[derive(Debug)]
 pub struct UberAll {
     rng: Hc128Rng,
 }

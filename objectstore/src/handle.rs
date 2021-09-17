@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Handle {
     Dir(openat::Dir),
     DirIter(openat::DirIter),

@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 use std::ffi::OsStr;
+use std::fmt;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -11,14 +12,24 @@ use objectstore::{Identifier, ObjectType, VirtualFileSystem};
 use crate::{HandleDb, InodeDb};
 
 use fuser::{
-    FileAttr, FileType, Filesystem, MountOption, ReplyAttr, ReplyData, ReplyDirectory, ReplyEmpty,
-    ReplyEntry, ReplyOpen, Request,
+    FileAttr, FileType, Filesystem, KernelConfig, MountOption, ReplyAttr, ReplyData,
+    ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request,
 };
 
 pub struct UberallFS {
     vfs: VirtualFileSystem,
     inodedb: InodeDb,
     handledb: HandleDb,
+}
+
+impl fmt::Debug for UberallFS {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("UberallFS")
+            .field("vfs", &self.vfs)
+            .field("inodedb", &self.inodedb)
+            .field("handledb", &self.handledb)
+            .finish()
+    }
 }
 
 impl UberallFS {

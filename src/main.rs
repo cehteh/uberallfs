@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::io;
 use std::sync::atomic::{AtomicU64, Ordering};
 use uberall::{
@@ -30,7 +29,7 @@ fn main() {
         }
     } {
         log::error!("{}", &err);
-        std::process::exit(error_to_exitcode(err));
+        std::process::exit(uberall::error_to_exitcode(err));
     } else {
         log::info!("OK");
     }
@@ -42,17 +41,6 @@ fn platform_init() {
         // no 'other' access
         libc::umask(libc::S_IRWXO);
     }
-}
-
-fn error_to_exitcode(error: Box<dyn Error>) -> i32 {
-    error
-        .downcast::<io::Error>()
-        .map_or(libc::EXIT_FAILURE, |e| {
-            e.raw_os_error().unwrap_or(match e.kind() {
-                io::ErrorKind::AlreadyExists => libc::EEXIST,
-                _ => todo!("implement for kind {:?}", e.kind()),
-            })
-        })
 }
 
 fn init_logging(matches: &ArgMatches) {
@@ -119,7 +107,7 @@ fn init_logging(matches: &ArgMatches) {
         logger = logger.chain(syslog::unix(syslog_formatter).expect("syslog opened"));
     }
 
-    if let Some(logfile) = matches.value_of_os("log-file") {
+    if let Some(logfile) = matches.value_of_os("logfile") {
         logger = logger.chain(fern::log_file(logfile).expect("opening logfile ok"));
     }
 

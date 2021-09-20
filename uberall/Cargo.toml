@@ -7,7 +7,8 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 clap = "2.33"
-daemonize = "0.4"
+# daemonize = "0.5"
+daemonize = { path = "/home/ct/src/other/daemonize/daemonize" }
 fern = { version = "0.6", features = ["colored", "syslog-4"] }
 lazy_static = "1.4"
 libc = "0.2"
@@ -19,3 +20,4 @@ rand_core = "0.6"
 rand_hc = "0.3"
 syslog = "4"
 thiserror = "1.0"
+ipc-channel = "0.15"

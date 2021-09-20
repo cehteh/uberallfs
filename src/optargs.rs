@@ -13,8 +13,8 @@ pub fn uberallfs_optargs() -> App<'static, 'static> {
                 .help("Enable debug mode, disables daemonize unless explicitly requested"),
         )
         .arg(
-            Arg::with_name("daemon")
-                .long("daemon")
+            Arg::with_name("background")
+                .long("background")
                 .help("Fork into background, if applicable, enables logging to syslog"),
         )
         .arg(
@@ -23,15 +23,15 @@ pub fn uberallfs_optargs() -> App<'static, 'static> {
                 .help("Do not fork into background"),
         )
         .arg(
-            Arg::with_name("log-file")
-                .long("log-file")
+            Arg::with_name("logfile")
+                .long("logfile")
                 .takes_value(true)
                 .value_name("LOGFILE")
                 .help("Specify a a filename for logging"),
         )
         .arg(
-            Arg::with_name("pid-file")
-                .long("pid-file")
+            Arg::with_name("pidfile")
+                .long("pidfile")
                 .takes_value(true)
                 .value_name("PIDFILE")
                 .help("Path to a pidfile when daemonizing"),

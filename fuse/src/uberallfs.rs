@@ -6,6 +6,7 @@ use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use uberall::libc;
+use uberall::ipc_channel::ipc;
 
 use objectstore::{Identifier, ObjectType, VirtualFileSystem};
 
@@ -16,10 +17,46 @@ use fuser::{
     ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request,
 };
 
+type CallbackTx = ipc::IpcSender<std::option::Option<i32>>;
+
+struct CallBack {
+    callback: Option<Box<dyn FnOnce(CallbackTx, Option<i32>)>>,
+    tx: Option<CallbackTx>,
+}
+
+impl CallBack {
+    fn new() -> Self {
+        CallBack {
+            callback: None,
+            tx: None,
+        }
+    }
+
+    pub fn set(
+        &mut self,
+        callback: Box<dyn FnOnce(CallbackTx, Option<i32>)>,
+        tx: Option<CallbackTx>,
+    ) -> &Self {
+        self.callback = Some(callback);
+        self.tx = tx;
+        self
+    }
+
+    pub fn callback_once(&mut self, error: Option<i32>) {
+        if let Some(callback) = self.callback.take() {
+            trace!("callback");
+            callback(self.tx.take().unwrap(), error);
+        } else {
+            trace!("no callback");
+        }
+    }
+}
+
 pub struct UberallFS {
     vfs: VirtualFileSystem,
     inodedb: InodeDb,
     handledb: HandleDb,
+    callback: CallBack,
 }
 
 impl fmt::Debug for UberallFS {
@@ -28,6 +65,7 @@ impl fmt::Debug for UberallFS {
             .field("vfs", &self.vfs)
             .field("inodedb", &self.inodedb)
             .field("handledb", &self.handledb)
+            .field("callback.is_some()", &self.callback.callback.is_some())
             .finish()
     }
 }
@@ -38,7 +76,21 @@ impl UberallFS {
             vfs: VirtualFileSystem::new(objectstore_dir)?,
             inodedb: InodeDb::new()?,
             handledb: HandleDb::with_capacity(1024)?,
+            callback: CallBack::new(),
         })
+    }
+
+    pub fn with_callback<C: FnOnce(CallbackTx, Option<i32>) + Copy + 'static>(
+        mut self,
+        callback: C,
+        tx: Option<CallbackTx>,
+    ) -> Self {
+        self.callback.set(Box::new(callback), tx);
+        self
+    }
+
+    pub fn callback_once(&mut self, error: Option<i32>) {
+        self.callback.callback_once(error);
     }
 
     pub fn mount(
@@ -58,13 +110,28 @@ impl UberallFS {
 
         self.inodedb.store(1, identifier);
         //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
-        fuser::mount2(self, mountpoint, &options)?;
-        Ok(())
+        fuser::mount2(&mut self, mountpoint, &options)
+            .or_else(|err| {
+                error!("mounting filesystem: {:?}", err);
+                self.callback_once(err.raw_os_error());
+                Err(err)
+            })
+            .or(Ok(()))
     }
 }
 
-impl Filesystem for UberallFS {
+impl Filesystem for &mut UberallFS {
     //PLANNED: investigate what to do async
+
+    fn init(
+        &mut self,
+        _req: &Request<'_>,
+        _config: &mut KernelConfig,
+    ) -> std::result::Result<(), libc::c_int> {
+        trace!("init filesystem");
+        self.callback.callback_once(None);
+        Ok(())
+    }
 
     fn access(&mut self, req: &Request<'_>, ino: u64, mode: i32, reply: ReplyEmpty) {
         if let Some(entry) = self.inodedb.get(ino) {

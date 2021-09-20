@@ -23,6 +23,7 @@ pub fn error_to_exitcode(error: Box<dyn Error>) -> i32 {
         .map_or(libc::EXIT_FAILURE, |e| {
             e.raw_os_error().unwrap_or(match e.kind() {
                 io::ErrorKind::AlreadyExists => libc::EEXIST,
+                io::ErrorKind::Other => libc::EXIT_FAILURE,
                 _ => todo!("implement for kind {:?}", e.kind()),
             })
         })

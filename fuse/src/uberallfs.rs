@@ -6,7 +6,8 @@ use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use uberall::libc;
-use uberall::ipc_channel::ipc;
+
+use uberall::daemon;
 
 use objectstore::{Identifier, ObjectType, VirtualFileSystem};
 
@@ -17,46 +18,11 @@ use fuser::{
     ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request,
 };
 
-type CallbackTx = ipc::IpcSender<std::option::Option<i32>>;
-
-struct CallBack {
-    callback: Option<Box<dyn FnOnce(CallbackTx, Option<i32>)>>,
-    tx: Option<CallbackTx>,
-}
-
-impl CallBack {
-    fn new() -> Self {
-        CallBack {
-            callback: None,
-            tx: None,
-        }
-    }
-
-    pub fn set(
-        &mut self,
-        callback: Box<dyn FnOnce(CallbackTx, Option<i32>)>,
-        tx: Option<CallbackTx>,
-    ) -> &Self {
-        self.callback = Some(callback);
-        self.tx = tx;
-        self
-    }
-
-    pub fn callback_once(&mut self, error: Option<i32>) {
-        if let Some(callback) = self.callback.take() {
-            trace!("callback");
-            callback(self.tx.take().unwrap(), error);
-        } else {
-            trace!("no callback");
-        }
-    }
-}
-
 pub struct UberallFS {
     vfs: VirtualFileSystem,
     inodedb: InodeDb,
     handledb: HandleDb,
-    callback: CallBack,
+    callback: daemon::Callback,
 }
 
 impl fmt::Debug for UberallFS {
@@ -65,7 +31,7 @@ impl fmt::Debug for UberallFS {
             .field("vfs", &self.vfs)
             .field("inodedb", &self.inodedb)
             .field("handledb", &self.handledb)
-            .field("callback.is_some()", &self.callback.callback.is_some())
+            .field("callback.is_some()", &self.callback.is_some())
             .finish()
     }
 }
@@ -76,21 +42,23 @@ impl UberallFS {
             vfs: VirtualFileSystem::new(objectstore_dir)?,
             inodedb: InodeDb::new()?,
             handledb: HandleDb::with_capacity(1024)?,
-            callback: CallBack::new(),
+            callback: daemon::Callback::new(),
         })
     }
 
-    pub fn with_callback<C: FnOnce(CallbackTx, Option<i32>) + Copy + 'static>(
+    pub fn with_callback<
+        C: FnOnce(daemon::CallbackTx, daemon::CallbackMessage) + Copy + 'static,
+    >(
         mut self,
         callback: C,
-        tx: Option<CallbackTx>,
+        tx: Option<daemon::CallbackTx>,
     ) -> Self {
         self.callback.set(Box::new(callback), tx);
         self
     }
 
-    pub fn callback_once(&mut self, error: Option<i32>) {
-        self.callback.callback_once(error);
+    pub fn callback_once(&mut self, message: daemon::CallbackMessage) {
+        self.callback.callback_once(message);
     }
 
     pub fn mount(
@@ -113,7 +81,7 @@ impl UberallFS {
         fuser::mount2(&mut self, mountpoint, &options)
             .or_else(|err| {
                 error!("mounting filesystem: {:?}", err);
-                self.callback_once(err.raw_os_error());
+                self.callback_once(daemon::CallbackMessage::from_io_error(&err));
                 Err(err)
             })
             .or(Ok(()))
@@ -129,7 +97,7 @@ impl Filesystem for &mut UberallFS {
         _config: &mut KernelConfig,
     ) -> std::result::Result<(), libc::c_int> {
         trace!("init filesystem");
-        self.callback.callback_once(None);
+        self.callback_once(daemon::CallbackMessage::success());
         Ok(())
     }
 

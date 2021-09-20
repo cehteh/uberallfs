@@ -17,7 +17,7 @@ fn main() {
         .subcommand(fuse::optargs())
         .get_matches();
 
-    uberall::init_daemonize(&matches);
+    uberall::daemon::init_daemonize(&matches);
 
     init_logging(&matches);
 
@@ -97,7 +97,7 @@ fn init_logging(matches: &ArgMatches) {
         // Always log to stderr, we may not dameonize
         .chain(std::io::stderr());
 
-    if uberall::may_daemonize() {
+    if uberall::daemon::may_daemonize() {
         let syslog_formatter = syslog::Formatter3164 {
             facility: syslog::Facility::LOG_USER,
             hostname: None,

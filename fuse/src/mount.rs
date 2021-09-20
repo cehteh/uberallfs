@@ -19,12 +19,12 @@ pub(crate) fn opt_mount(mountpoint: &OsStr, matches: &ArgMatches) -> Result<()> 
 
     trace!("objectstore: {:?}", objectstore_dir);
 
-    uberall::maybe_daemonize(|tx| {
+    uberall::daemon::maybe_daemonize(|tx| {
         UberallFS::new(objectstore_dir)?
             .with_callback(
-                |tx, r| {
-                    debug!("callback CALLED");
-                    tx.send(r);
+                |tx, m| {
+                    debug!("callback called");
+                    tx.send(m);
                 },
                 tx,
             )

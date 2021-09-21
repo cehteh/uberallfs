@@ -122,9 +122,9 @@ impl Callback {
     }
 
     pub fn callback_once(&mut self, message: CallbackMessage) {
-        if let Some(callback) = self.callback.take() {
+        if let (Some(callback), Some(tx)) = (self.callback.take(), self.tx.take()) {
             trace!("callback");
-            callback(self.tx.take().unwrap(), message);
+            callback(tx, message);
         } else {
             trace!("no callback");
         }

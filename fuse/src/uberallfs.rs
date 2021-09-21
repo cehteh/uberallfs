@@ -78,12 +78,11 @@ impl UberallFS {
 
         self.inodedb.store(1, identifier);
         //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
-        fuser::mount2(&mut self, mountpoint, &options)
-            .or_else(|err| {
-                error!("mounting filesystem: {:?}", err);
-                self.callback_once(daemon::CallbackMessage::from_io_error(&err));
-                Err(err.into())
-            })
+        fuser::mount2(&mut self, mountpoint, &options).or_else(|err| {
+            error!("mounting filesystem: {:?}", err);
+            self.callback_once(daemon::CallbackMessage::from_io_error(&err));
+            Err(err.into())
+        })
     }
 }
 

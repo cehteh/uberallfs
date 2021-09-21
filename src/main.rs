@@ -85,11 +85,12 @@ fn init_logging(matches: &ArgMatches) {
         .format(move |out, message, record| {
             let thread_id = std::thread::current();
             out.finish(format_args!(
-                "{:0>16}: {:>5}: {}: {}: {}",
+                "{:0>16}: {:>5}: {}:{}: {}: {}",
                 seq_num(),
                 colors.color(record.level()),
+                record.file().unwrap_or(""),
+                record.line().unwrap_or(0),
                 thread_id.name().unwrap_or("UNKNOWN"),
-                record.target(),
                 message
             ))
         })

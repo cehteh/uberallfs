@@ -1,6 +1,7 @@
 pub mod daemon;
 mod prelude;
 mod uberall;
+pub use addy;
 pub use chrono;
 pub use clap;
 pub use fern;

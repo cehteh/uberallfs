@@ -82,9 +82,8 @@ impl UberallFS {
             .or_else(|err| {
                 error!("mounting filesystem: {:?}", err);
                 self.callback_once(daemon::CallbackMessage::from_io_error(&err));
-                Err(err)
+                Err(err.into())
             })
-            .or(Ok(()))
     }
 }
 

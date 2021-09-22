@@ -52,9 +52,9 @@ fn init_logging(matches: &ArgMatches) {
 
     // allow -dd for 'trace' level
     match matches.occurrences_of("debug") {
+        0 => {}
         1 => verbosity_level = 4,
-        2 => verbosity_level = 5,
-        _ => {}
+        _ => verbosity_level = 5,
     }
 
     verbosity_level += matches.occurrences_of("verbose");
@@ -85,7 +85,7 @@ fn init_logging(matches: &ArgMatches) {
         .format(move |out, message, record| {
             let thread_id = std::thread::current();
             out.finish(format_args!(
-                "{:0>16}: {:>5}: {}:{}: {}: {}",
+                "{:0>12}: {:>5}: {}:{}: {}: {}",
                 seq_num(),
                 colors.color(record.level()),
                 record.file().unwrap_or(""),
@@ -113,6 +113,14 @@ fn init_logging(matches: &ArgMatches) {
     }
 
     logger.apply().expect("initialized the logging system");
+
+    std::panic::set_hook(Box::new(|i| {
+        log::error!(
+            "panic at: {}:{}:",
+            i.location().map_or("", |l| l.file()),
+            i.location().map_or(0, |l| l.line())
+        );
+    }));
 
     log::info!("START: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
 }

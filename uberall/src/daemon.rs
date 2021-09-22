@@ -16,14 +16,16 @@ static DAEMONIZE: OnceCell<bool> = OnceCell::new();
 pub fn init_daemonize(matches: &ArgMatches) {
     DAEMONIZE
         .set(
-            !matches.is_present("foreground") && matches.is_present("background")
-                || !matches.is_present("debug"),
+            !matches.is_present("foreground")
+                && (matches.is_present("background") || !matches.is_present("debug")),
         )
         .unwrap();
 
     if let Some(pidfile) = matches.value_of_os("pidfile") {
         PIDFILE.set(pidfile.into()).unwrap();
     }
+
+    trace!("may_daemonize: {}", may_daemonize());
 }
 
 /// allowed to daemonize?

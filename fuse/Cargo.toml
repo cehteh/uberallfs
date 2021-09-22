@@ -6,6 +6,6 @@ edition = "2018"
 
 
 [dependencies]
-fuser = "0.9"
+fuser =  { git = "https://github.com/cberner/fuser.git", branch = "master" }
 objectstore = { path = "../objectstore" }
 uberall = { path = "../uberall" }

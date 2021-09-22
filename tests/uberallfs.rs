@@ -21,7 +21,7 @@ fn test_version() {
 
     // check for version as remider to keep the tests up to date
     uberallfs
-        .call_args(["-dd", "--version"])
+        .call_argstr("-dd --version")
         .assert_success()
         .assert_stdout_utf8("uberallfs 0.0.0");
 }
@@ -32,46 +32,43 @@ fn plumbing_init() {
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "init"])
+        .call_argstr("-dd objectstore teststore/ init")
         .assert_success();
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "init"])
+        .call_argstr("-dd objectstore teststore/ init")
         .assert_failure();
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "init", "--force"])
+        .call_argstr("-dd objectstore teststore/ init --force")
         .assert_success();
 }
 
 #[test]
-fn plumbing_basic() {
+fn plumbing_mkdir() {
     let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "init"])
+        .call_argstr("-dd objectstore teststore/ init")
         .assert_success();
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "mkdir", "/"])
+        .call_argstr("-dd objectstore teststore/ mkdir /")
         .assert_exitcode(libc::EEXIST);
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "mkdir", "/testdir"])
+        .call_argstr("-dd objectstore teststore/ mkdir /testdir")
         .assert_success();
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "mkdir", "/testdir"])
+        .call_argstr("-dd objectstore teststore/ mkdir /testdir")
         .assert_exitcode(libc::EEXIST);
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "show", "/testdir"])
+        .call_argstr("-dd objectstore teststore/ show /testdir")
         .assert_success();
     //PLANNED: -p is not implemented yet
-    //uberallfs.call(["-dd", "objectstore", "teststore/", "mkdir", "-p", "/test/dir"]);
+    //uberallfs.call(["-dd objectstore teststore/ mkdir -p /test/dir");
     uberallfs
-        .call_args([
-            "-dd",
-            "objectstore",
-            "teststore/",
-            "show",
-            "/doesnotexist",
-        ])
+        .call_argstr("-dd objectstore teststore/ show /doesnotexist")
+        .assert_failure();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ show hasnoslash")
         .assert_failure();
     uberallfs
         .call_args(["-dd", "objectstore", "teststore/", "show", "hasnoslash"])

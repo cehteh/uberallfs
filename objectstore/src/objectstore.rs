@@ -201,23 +201,36 @@ impl ObjectStore {
 
         let mut still_going = true;
         for p in path.iter() {
-            trace!("traverse element: {:?}", &p);
             let subobject = SubObject(&root, p);
             if still_going {
+                trace!("traverse element: {:?}", &p);
                 match self.sub_object_id(&subobject) {
                     Ok(r) => {
                         trace!("subobject: ok {:?}", &r);
                         root = r;
                     }
-                    x => {
-                        trace!("subobject: fail {:?}", &x);
-
-                        still_going = false;
-                        out.push(p);
-                    }
+                    Err(err) => match err.downcast_ref::<io::Error>() {
+                        Some(ioerr) => match ioerr.kind() {
+                            NotFound => {
+                                // execpted case, just push path together
+                                trace!("subobject: {:?}", &err);
+                                still_going = false;
+                                out.push(p);
+                            }
+                            _ => {
+                                // unexpected error
+                                error!("subobject: {:?}", &err);
+                                return Err(err);
+                            }
+                        },
+                        None => {
+                            // unexpected error
+                            error!("subobject: {:?}", &err);
+                            return Err(err);
+                        }
+                    },
                 }
             } else {
-                trace!("traverse: {:?}", &path);
                 out.push(p);
             }
         }

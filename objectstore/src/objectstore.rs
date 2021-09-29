@@ -293,11 +293,19 @@ impl ObjectStore {
         let mut dest = PathBuf::new();
         dest.push_link(identifier);
 
-        trace!("link: {:?} -> {:?}", source.as_os_str(), dest.as_os_str());
+        let file_name = source.file_name().unwrap();
+        if file_name.as_bytes().len() >= crate::RESERVED_PREFIX.len()
+            && file_name.as_bytes()[..crate::RESERVED_PREFIX.len()] == crate::RESERVED_PREFIX
+        {
+            warn!("link: illegal file name: {:?}", &file_name);
+            Err(ObjectStoreError::IllegalFileName.into())
+        } else {
+            trace!("link: {:?} -> {:?}", source.as_os_str(), dest.as_os_str());
 
-        self.objects
-            .symlink(source.as_os_str(), dest.as_os_str())
-            .map_err(|e| e.into())
+            self.objects
+                .symlink(source.as_os_str(), dest.as_os_str())
+                .map_err(|e| e.into())
+        }
     }
 
     pub fn open_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
@@ -377,6 +385,7 @@ impl Drop for ObjectStore {
 }
 
 /// identifier/name pair for a subobject in a directory
+#[derive(Debug)]
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
 
 impl SubObject<'_> {

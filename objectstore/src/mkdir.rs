@@ -28,7 +28,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     src.ensure_dir()?;
 
     if !remaining.as_os_str().is_empty() {
-        debug!("mkdir: {:?}/{:?}", src.as_os_str(), remaining.as_os_str());
+        debug!("mkdir: {:?} / {:?}", src.as_os_str(), remaining.as_os_str());
 
         if remaining.components().next() == None {
             return Err(ObjectStoreError::ObjectExists.into());
@@ -63,10 +63,8 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         trace!("identifier: {:?}", &object.identifier);
 
         //FIXME: remove object when failed and not from SOURCE
-        objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))?;
+        objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))
     } else {
-        return Err(io::Error::from(io::ErrorKind::AlreadyExists).into());
+        Err(io::Error::from(io::ErrorKind::AlreadyExists).into())
     }
-
-    Ok(())
 }

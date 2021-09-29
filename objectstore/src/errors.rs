@@ -48,6 +48,9 @@ pub enum ObjectStoreError {
     #[error("object {0:?} not found")]
     ObjectNotFound(OsString),
 
+    #[error("Illegal file name")]
+    IllegalFileName,
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 

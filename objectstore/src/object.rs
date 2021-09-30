@@ -30,7 +30,7 @@ impl Object {
         }
     }
 
-    pub fn acl(self, _acl: Option<Acl>) -> Self {
+    pub fn acl(self, _acl: &Option<Acl>) -> Self {
         self
     }
 

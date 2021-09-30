@@ -21,7 +21,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         None
     };
 
-    let (src, remaining) = objectstore.path_lookup(
+    let (mut src, remaining) = objectstore.path_lookup(
         &matches.value_of_os("PATH").map(PathBuf::from).unwrap(),
         None,
     )?;
@@ -33,11 +33,38 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         if remaining.components().next() == None {
             return Err(ObjectStoreError::ObjectExists.into());
         }
-        assert_eq!(
-            remaining.components().count(),
-            1,
-            "TODO: parent dir handling"
-        );
+
+        let count = remaining.components().count();
+        // create parent dirs
+        if count > 1 {
+            //TODO: factor out to handle errors and delete subdirs on rollback
+            if matches.is_present("parents") {
+                for name in remaining.components().take(count - 1) {
+                    let name = name.as_os_str();
+                    info!("create: {:?}", name);
+
+                    let object = Object::new(
+                        ObjectType::Directory,
+                        sharing_policy,
+                        Mutability::Mutable,
+                        objectstore.rng_identifier(),
+                    )
+                    .acl(&acl)
+                    .realize(&objectstore)?;
+                    trace!("identifier: {:?}", &object.identifier);
+
+                    objectstore.create_link(&object.identifier, SubObject(&src, name))?;
+
+                    src = object.identifier;
+                }
+            } else {
+                warn!(
+                    "Parent dir missing, no -p given: {:?}",
+                    remaining.components().next().unwrap().as_os_str()
+                );
+                return Err(ObjectStoreError::NoParent.into());
+            }
+        }
 
         let object = match matches.value_of("SOURCE") {
             Some(_base64) => {
@@ -56,14 +83,17 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                 Mutability::Mutable,
                 objectstore.rng_identifier(),
             )
-            .acl(acl)
+            .acl(&acl)
             .realize(&objectstore)?,
         };
 
         trace!("identifier: {:?}", &object.identifier);
 
-        //FIXME: remove object when failed and not from SOURCE
-        objectstore.create_link(&object.identifier, SubObject(&src, remaining.as_os_str()))
+        //FIXME: remove object when failed and not from SOURCE, remove created parents as well
+        objectstore.create_link(
+            &object.identifier,
+            SubObject(&src, remaining.components().last().unwrap().as_os_str()),
+        )
     } else {
         Err(io::Error::from(io::ErrorKind::AlreadyExists).into())
     }

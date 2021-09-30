@@ -4,7 +4,7 @@
 // implementation yet.
 
 #[repr(u8)] // 3 bits
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ObjectType {
     File = 0 << 5,
     Directory = 1 << 5,
@@ -17,7 +17,7 @@ pub enum ObjectType {
 }
 
 #[repr(u8)] // 3 bits
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum SharingPolicy {
     Private = 0 << 2,
     PublicAcl = 1 << 2,
@@ -30,7 +30,7 @@ pub enum SharingPolicy {
 }
 
 #[repr(u8)] // 2 bits
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Mutability {
     Mutable = 0,
     Immutable = 1,

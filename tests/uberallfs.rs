@@ -43,7 +43,7 @@ fn plumbing_init() {
 }
 
 #[test]
-fn plumbing_mkdir() {
+fn plumbing_mkdir_basic() {
     let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
@@ -62,15 +62,26 @@ fn plumbing_mkdir() {
     uberallfs
         .call_argstr("-dd objectstore teststore/ show /testdir")
         .assert_success();
-    //PLANNED: -p is not implemented yet
-    //uberallfs.call(["-dd objectstore teststore/ mkdir -p /test/dir");
     uberallfs
         .call_argstr("-dd objectstore teststore/ show /doesnotexist")
         .assert_failure();
     uberallfs
         .call_argstr("-dd objectstore teststore/ show hasnoslash")
         .assert_failure();
+}
+
+#[test]
+fn plumbing_mkdir_parent() {
+    let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
+    let tempdir = TempDir::new().expect("created tempdir");
+    uberallfs.current_dir(&tempdir);
     uberallfs
-        .call_args(["-dd", "objectstore", "teststore/", "show", "hasnoslash"])
-        .assert_failure();
+        .call_argstr("-dd objectstore teststore/ init")
+        .assert_success();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ mkdir -p /test/dir/inner")
+        .assert_success();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ show /test/dir/inner")
+        .assert_success();
 }

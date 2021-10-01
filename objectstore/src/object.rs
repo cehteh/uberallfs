@@ -68,7 +68,7 @@ impl ObjectImpl {
     fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> Result<()> {
         match self {
             ObjectImpl::PrivateMutable => {
-                objectstore.create_directory(identifier, None, DirectoryPermissions::new().full())
+                objectstore.create_directory(identifier, DirectoryPermissions::new().full())
             }
 
             _ => Err(ObjectStoreError::UnsupportedObjectType.into()),

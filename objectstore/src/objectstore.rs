@@ -336,7 +336,6 @@ impl ObjectStore {
     pub(crate) fn create_directory(
         &self,
         identifier: &Identifier,
-        parent: Option<SubObject>,
         perm: DirectoryPermissions,
     ) -> Result<()> {
         identifier.ensure_dir()?;
@@ -345,14 +344,6 @@ impl ObjectStore {
         info!("create_directory: {:?}", path.as_os_str());
 
         self.objects.create_dir(path.as_os_str(), perm.get())?;
-
-        if let Some(parent) = parent {
-            parent.0.ensure_dir()?;
-
-            let path = PathBuf::from("..").push_identifier(parent.0).push(parent.1);
-            info!("link: {:?} -> {:?}", path, identifier.id_base64().0);
-        }
-
         Ok(())
     }
 

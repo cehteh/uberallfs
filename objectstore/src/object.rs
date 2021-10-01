@@ -43,7 +43,7 @@ impl Object {
 
 #[derive(Debug)]
 enum ObjectImpl {
-    Unimplemented,
+    NotSupported,
     PrivateMutable,
     PublicImmutableFile {
         creator: Option<Creator>,
@@ -61,7 +61,7 @@ impl ObjectImpl {
                 creator: None,
                 acl: None,
             },
-            _ => ObjectImpl::Unimplemented,
+            _ => ObjectImpl::NotSupported,
         }
     }
 
@@ -71,7 +71,11 @@ impl ObjectImpl {
                 objectstore.create_directory(identifier, DirectoryPermissions::new().full())
             }
 
-            _ => Err(ObjectStoreError::UnsupportedObjectType.into()),
+            ObjectImpl::PublicImmutableFile { .. } => {
+                todo!();
+            }
+
+            ObjectImpl::NotSupported => Err(ObjectStoreError::UnsupportedObjectType.into()),
         }
     }
 }

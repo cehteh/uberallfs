@@ -43,7 +43,7 @@ pub const VERSION: u32 = 0;
 pub const RESERVED_PREFIX: [u8; 11] = *b".uberallfs.";
 
 pub fn cmd(matches: &ArgMatches) -> Result<()> {
-    let dir = matches.value_of_os("DIRECTORY").expect("infallible");
+    let dir = matches.value_of_os("DIRECTORY").unwrap();
 
     trace!("objectstore directory: {:?}", dir);
 

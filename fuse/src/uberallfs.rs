@@ -42,17 +42,14 @@ impl UberallFS {
             vfs: VirtualFileSystem::new(objectstore_dir)?,
             inodedb: InodeDb::new()?,
             handledb: HandleDb::with_capacity(1024)?,
-            callback: daemon::Callback::new(),
+            callback: daemon::Callback::default(),
         })
     }
 
-    pub fn with_callback<
+    pub fn with_callback<C>(mut self, callback: C, tx: Option<daemon::CallbackTx>) -> Self
+    where
         C: FnOnce(daemon::CallbackTx, daemon::CallbackMessage) + Copy + 'static,
-    >(
-        mut self,
-        callback: C,
-        tx: Option<daemon::CallbackTx>,
-    ) -> Self {
+    {
         self.callback.set(Box::new(callback), tx);
         self
     }
@@ -78,10 +75,10 @@ impl UberallFS {
 
         self.inodedb.store(1, identifier);
         //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
-        fuser::mount2(&mut self, mountpoint, &options).or_else(|err| {
+        fuser::mount2(&mut self, mountpoint, &options).map_err(|err| {
             error!("mounting filesystem: {:?}", err);
             self.callback_once(daemon::CallbackMessage::from_io_error(&err));
-            Err(err.into())
+            err.into()
         })
     }
 }

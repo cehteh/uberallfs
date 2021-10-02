@@ -36,7 +36,7 @@ pub(crate) fn opt_mount(mountpoint: &OsStr, matches: &ArgMatches) -> Result<()> 
             .with_callback(
                 |tx, m| {
                     debug!("callback called");
-                    tx.send(m);
+                    tx.send(m).expect("send message");
                 },
                 tx,
             )

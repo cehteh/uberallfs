@@ -46,7 +46,6 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
 
     let mut logger = fern::Dispatch::new();
 
-
     if matches.is_present("debug") {
         logger = logger.format(move |out, message, record| {
             let thread_id = std::thread::current();
@@ -71,9 +70,8 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
         });
     }
 
-    logger = logger.level(verbosity_level)
-        // Always log to stderr, we may not dameonize
-        .chain(std::io::stderr());
+    // Always log to stderr, we may not dameonize
+    logger = logger.level(verbosity_level).chain(std::io::stderr());
 
     if uberall::daemon::may_daemonize() {
         let syslog_formatter = syslog::Formatter3164 {
@@ -101,4 +99,3 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
 
     log::info!("START: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
 }
-

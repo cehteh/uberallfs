@@ -66,7 +66,7 @@ pub fn maybe_daemonize<F: FnOnce(Option<ipc::IpcSender<CallbackMessage>>) -> Res
             daemonize::Outcome::Parent(_) => {
                 // close child side fd
                 drop(tx);
-                match rx.recv().unwrap_or(CallbackMessage::faulty()) {
+                match rx.recv().unwrap_or_else(|_| CallbackMessage::faulty()) {
                     CallbackMessage {
                         is_error: true,
                         os_error: Some(err),
@@ -92,7 +92,7 @@ pub fn maybe_daemonize<F: FnOnce(Option<ipc::IpcSender<CallbackMessage>>) -> Res
         }
     } else {
         log::debug!("do not daemonize");
-        childfunc(None).into()
+        childfunc(None)
     }
 }
 
@@ -100,19 +100,13 @@ pub type CallbackTx = ipc::IpcSender<CallbackMessage>;
 
 /// The callback state, may hold the callback function and the sending side of the IPC channel
 /// to the parent.
+#[derive(Default)]
 pub struct Callback {
     callback: Option<Box<dyn FnOnce(CallbackTx, CallbackMessage)>>,
     tx: Option<CallbackTx>,
 }
 
 impl Callback {
-    pub fn new() -> Self {
-        Callback {
-            callback: None,
-            tx: None,
-        }
-    }
-
     pub fn set(
         &mut self,
         callback: Box<dyn FnOnce(CallbackTx, CallbackMessage)>,

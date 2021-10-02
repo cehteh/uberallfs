@@ -39,4 +39,3 @@ fn platform_init() {
         libc::umask(libc::S_IRWXO);
     }
 }
-

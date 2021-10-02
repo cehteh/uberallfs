@@ -43,14 +43,10 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                     let name = name.as_os_str();
                     info!("create: {:?}", name);
 
-                    let object = Object::new(
-                        ObjectType::Directory,
-                        sharing_policy,
-                        Mutability::Mutable,
-                        objectstore.rng_identifier(),
-                    )
-                    .acl(&acl)
-                    .realize(&objectstore)?;
+                    let object =
+                        Object::build(ObjectType::Directory, sharing_policy, Mutability::Mutable)
+                            .acl(&acl)
+                            .realize(&mut objectstore)?;
                     trace!("identifier: {:?}", &object.identifier);
 
                     objectstore.create_link(&object.identifier, SubObject(&src, name))?;
@@ -77,14 +73,9 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                 unimplemented!("use existing object")
             }
 
-            None => Object::new(
-                ObjectType::Directory,
-                sharing_policy,
-                Mutability::Mutable,
-                objectstore.rng_identifier(),
-            )
-            .acl(&acl)
-            .realize(&objectstore)?,
+            None => Object::build(ObjectType::Directory, sharing_policy, Mutability::Mutable)
+                .acl(&acl)
+                .realize(&mut objectstore)?,
         };
 
         trace!("identifier: {:?}", &object.identifier);

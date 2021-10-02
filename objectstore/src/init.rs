@@ -65,13 +65,12 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         }
     } else if !matches.is_present("noroot") {
         Some(
-            Object::new(
+            Object::build(
                 ObjectType::Directory,
                 SharingPolicy::Private,
                 Mutability::Mutable,
-                objectstore.rng_identifier(),
             )
-            .realize(&objectstore),
+            .realize(&mut objectstore),
         )
     } else {
         None

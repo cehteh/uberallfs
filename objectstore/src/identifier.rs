@@ -43,6 +43,8 @@ pub struct Identifier {
     base64: Flipbase64,
 }
 
+pub struct IdentifierBuilder(IdentifierKind);
+
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         f.debug_struct("Identifier")
@@ -131,6 +133,10 @@ impl Identifier {
         }
     }
 
+    pub(crate) fn build(kind: IdentifierKind) -> IdentifierBuilder {
+        IdentifierBuilder(kind)
+    }
+
     pub(crate) fn from_flipbase64(base64: Flipbase64) -> Result<Identifier> {
         Ok(Identifier {
             kind: (&base64).try_into()?,
@@ -143,7 +149,7 @@ impl Identifier {
     }
 
     pub(crate) fn as_os_str(&self) -> &OsStr {
-        &OsStr::from_bytes(&self.base64.0[..])
+        OsStr::from_bytes(&self.base64.0[..])
     }
 
     pub(crate) fn id_bin(&self) -> IdentifierBin {
@@ -176,5 +182,28 @@ impl Identifier {
         let mut pathbuf = PathBuf::new();
         pathbuf.push_identifier(self);
         pathbuf
+    }
+}
+
+impl IdentifierBuilder {
+    pub(crate) fn with_binary(self, binary: IdentifierBin) -> Identifier {
+        use io::Write;
+
+        let mut base64: [MaybeUninit<u8>; FLIPBASE64_LEN] = MaybeUninit::uninit_array();
+        let mut encoder = base64::write::EncoderWriter::new(
+            rev_cursor::WriteCursor::new(&mut base64[..]),
+            base64::URL_SAFE_NO_PAD,
+        );
+
+        unsafe {
+            encoder.write(&[self.0 .0]).unchecked_unwrap();
+            encoder.write(&binary.0).unchecked_unwrap();
+        }
+        drop(encoder);
+
+        Identifier {
+            kind: self.0,
+            base64: unsafe { Flipbase64(MaybeUninit::array_assume_init(base64)) },
+        }
     }
 }

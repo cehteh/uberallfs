@@ -95,10 +95,7 @@ impl ObjectStore {
             trace!("root: {:?}", root_name);
             Identifier::from_flipbase64(Flipbase64(root_name.as_bytes().try_into()?))
         } else {
-            return Err(ObjectStoreError::ObjectStoreFatal(String::from(
-                "root directory not found",
-            ))
-            .into());
+            Err(ObjectStoreError::ObjectStoreFatal(String::from("root directory not found")).into())
         }
     }
 
@@ -211,7 +208,7 @@ impl ObjectStore {
                     }
                     Err(err) => match err.downcast_ref::<io::Error>() {
                         Some(ioerr) => match ioerr.kind() {
-                            NotFound => {
+                            io::ErrorKind::NotFound => {
                                 // execpted case, just push path together
                                 trace!("subobject: {:?}", &err);
                                 still_going = false;
@@ -299,6 +296,8 @@ impl ObjectStore {
         unimplemented!()
     }
 
+
+    /// Create a link from 'parent' directory (identifier/name pair) to the given identifier
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;
 
@@ -321,18 +320,21 @@ impl ObjectStore {
         }
     }
 
+    /// Opens a Dir handle to an Directory, identified by 'identifier'
     pub fn open_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
         self.objects
             .sub_dir(identifier.to_pathbuf().as_path())
             .map(Handle::Dir)
     }
 
+    /// Opens a DirIter handle to an Directory, identified by 'identifier'.
     pub fn list_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
         self.objects
             .list_dir(identifier.to_pathbuf().as_path())
             .map(Handle::DirIter)
     }
 
+    /// Creates a directory for an 'identifier'.
     pub(crate) fn create_directory(
         &self,
         identifier: &Identifier,
@@ -363,6 +365,7 @@ impl ObjectStore {
         unimplemented!()
     }
 
+    /// Returns the underlying metadata for the identifier itself
     pub fn object_metadata(&self, identifier: &Identifier) -> io::Result<Metadata> {
         self.objects.metadata(identifier.to_pathbuf().as_path())
     }
@@ -372,6 +375,8 @@ impl ObjectStore {
     //pub fn revive_object // move from deleted
 
     //pub fn cleanup_deleted // delete expired objects
+
+    /// Registers the objectstores root directory to 'identifier'.
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
         identifier.ensure_dir()?;
         let mut path = PathBuf::new();

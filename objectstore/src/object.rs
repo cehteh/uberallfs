@@ -8,39 +8,57 @@ pub struct Acl;
 #[derive(Debug)]
 pub struct Creator;
 
-use crate::identifier::{Identifier, IdentifierBin};
+use crate::identifier::{Identifier, IdentifierBuilder};
 use crate::identifier_kind::*;
 
+/// An Objectstore object
 pub struct Object {
     pub identifier: Identifier,
     opts: ObjectImpl,
 }
 
+/// Builder Type for incomplete Objects
+pub struct ObjectBuilder {
+    identifier: IdentifierBuilder,
+    opts: ObjectImpl,
+}
+
 impl Object {
-    pub fn new(
+    /// Start building an Object with the specified parameters
+    #[must_use = "configure the builder and finally call realize()"]
+    pub fn build(
         object_type: ObjectType,
         sharing_policy: SharingPolicy,
         mutability: Mutability,
-        binary: IdentifierBin,
-    ) -> Self {
+    ) -> ObjectBuilder {
         let kind = IdentifierKind::create(object_type, sharing_policy, mutability);
-        Object {
-            identifier: Identifier::from_binary(kind, binary),
+        ObjectBuilder {
+            identifier: Identifier::build(kind),
             opts: ObjectImpl::new(kind),
         }
     }
+}
 
-    pub fn acl(self, _acl: &Option<Acl>) -> Self {
+impl ObjectBuilder {
+    /// May attach an acl to an object
+    //TODO: multiple acl's then not option but conditional incremental
+    #[must_use = "configure the builder and finally call realize()"]
+    pub fn acl(self, acl: &Option<Acl>) -> Self {
+        match acl {
+            Some(acl) => todo!(),
+            None => {}
+        }
         self
     }
 
-    pub fn realize(self, objectstore: &ObjectStore) -> Result<Object> {
-        self.opts
-            .realize(&self.identifier, objectstore)
-            .and(Ok(self))
+    /// Realizes the final Object. This creates the respective files in the backing
+    /// 'Objectstore'.
+    pub fn realize(self, objectstore: &mut ObjectStore) -> Result<Object> {
+        self.opts.realize(self.identifier, objectstore)
     }
 }
 
+/// Implements the diffent kinds of objects. Implementation detail.
 #[derive(Debug)]
 enum ObjectImpl {
     NotSupported,
@@ -53,6 +71,7 @@ enum ObjectImpl {
 }
 
 impl ObjectImpl {
+    /// Create the ObjectImpl for the given IdentifierKind.
     fn new(kind: IdentifierKind) -> ObjectImpl {
         use crate::identifier_kind::{Mutability::*, ObjectType::*, SharingPolicy::*};
         match kind.components() {
@@ -65,10 +84,21 @@ impl ObjectImpl {
         }
     }
 
-    fn realize(&self, identifier: &Identifier, objectstore: &ObjectStore) -> Result<()> {
+    /// The actual per-ObjectImpl creation on the backing ObjectStore.
+    fn realize(
+        self,
+        identifier: IdentifierBuilder,
+        objectstore: &mut ObjectStore,
+    ) -> Result<Object> {
         match self {
             ObjectImpl::PrivateMutable => {
-                objectstore.create_directory(identifier, DirectoryPermissions::new().full())
+                let identifier = identifier.with_binary(objectstore.rng_identifier());
+                objectstore.create_directory(&identifier, DirectoryPermissions::new().full())?;
+
+                Ok(Object {
+                    identifier,
+                    opts: self,
+                })
             }
 
             ObjectImpl::PublicImmutableFile { .. } => {

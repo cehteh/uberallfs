@@ -296,7 +296,6 @@ impl ObjectStore {
         unimplemented!()
     }
 
-
     /// Create a link from 'parent' directory (identifier/name pair) to the given identifier
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;

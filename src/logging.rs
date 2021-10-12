@@ -73,7 +73,9 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
     // Always log to stderr, we may not dameonize
     logger = logger.level(verbosity_level).chain(std::io::stderr());
 
-    if uberall::daemon::may_daemonize() {
+    if let Some(logfile) = matches.value_of_os("logfile") {
+        logger = logger.chain(fern::log_file(logfile).expect("opening logfile ok"));
+    } else if uberall::daemon::may_daemonize() {
         let syslog_formatter = syslog::Formatter3164 {
             facility: syslog::Facility::LOG_USER,
             hostname: None,
@@ -81,10 +83,6 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
             pid: 0,
         };
         logger = logger.chain(syslog::unix(syslog_formatter).expect("syslog opened"));
-    }
-
-    if let Some(logfile) = matches.value_of_os("logfile") {
-        logger = logger.chain(fern::log_file(logfile).expect("opening logfile ok"));
     }
 
     logger.apply().expect("initialized the logging system");

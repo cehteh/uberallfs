@@ -28,7 +28,7 @@ fn main() {
         log::error!("{}", &err);
         std::process::exit(uberall::error_to_exitcode(err));
     } else {
-        log::info!("OK");
+        log::info!("OK")
     }
 }
 

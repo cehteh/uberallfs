@@ -27,7 +27,7 @@ fn test_version() {
 }
 
 #[test]
-fn plumbing_init() {
+fn init() {
     let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
@@ -43,7 +43,7 @@ fn plumbing_init() {
 }
 
 #[test]
-fn plumbing_mkdir_basic() {
+fn mkdir_basic() {
     let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);
@@ -71,7 +71,7 @@ fn plumbing_mkdir_basic() {
 }
 
 #[test]
-fn plumbing_mkdir_parent() {
+fn mkdir_parent() {
     let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
     let tempdir = TempDir::new().expect("created tempdir");
     uberallfs.current_dir(&tempdir);

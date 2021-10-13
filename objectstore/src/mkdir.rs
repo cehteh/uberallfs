@@ -1,10 +1,9 @@
-use crate::prelude::*;
-
 use std::path::PathBuf;
-use uberall::clap::ArgMatches;
-
 use std::ffi::OsStr;
 
+use uberall::clap::ArgMatches;
+
+use crate::prelude::*;
 use crate::identifier_kind::*;
 use crate::object::Object;
 use crate::objectstore::{ObjectStore, SubObject};
@@ -37,7 +36,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         let count = remaining.components().count();
         // create parent dirs
         if count > 1 {
-            //TODO: factor out to handle errors and delete subdirs on rollback
+            // TODO: factor out to handle errors and delete subdirs on rollback
             if matches.is_present("parents") {
                 for name in remaining.components().take(count - 1) {
                     let name = name.as_os_str();
@@ -80,7 +79,8 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
         trace!("identifier: {:?}", &object.identifier);
 
-        //FIXME: remove object when failed and not from SOURCE, remove created parents as well
+        // FIXME: remove object when failed and not from SOURCE, remove created parents
+        // as well
         objectstore.create_link(
             &object.identifier,
             SubObject(&src, remaining.components().last().unwrap().as_os_str()),

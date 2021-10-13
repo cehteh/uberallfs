@@ -1,9 +1,9 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 mod prelude;
-use crate::prelude::*;
-
 use uberall::{clap::ArgMatches, lazy_static, log};
+
+use crate::prelude::*;
 
 mod optargs;
 pub use self::optargs::optargs;
@@ -23,18 +23,19 @@ mod init;
 mod mkdir;
 mod show;
 
-pub use crate::objectpath::ObjectPath;
-pub use crate::objectstore::{ObjectStore, SubObject};
 pub use handle::Handle;
 pub use identifier::{Flipbase64, Identifier, IdentifierBin};
 pub use identifier_kind::{Mutability, ObjectType, SharingPolicy};
 pub use object::Object;
 pub use permissions::{PermissionCheck, PermissionController};
-
 pub use vfs::VirtualFileSystem;
 
-//PLANNED: mockup types defined and exported that dont have a implementation yet
-pub type UserId = u32;
+pub use crate::objectpath::ObjectPath;
+pub use crate::objectstore::{ObjectStore, SubObject};
+
+// PLANNED: mockup types defined and exported that dont have a implementation
+// yet
+pub type UserId = u32; //TODO: u64
 
 /// Objectstore version
 pub const VERSION: u32 = 0;

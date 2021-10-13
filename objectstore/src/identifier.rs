@@ -1,16 +1,16 @@
-use crate::objectpath::ObjectPath;
-use crate::prelude::*;
 use std::error::Error;
 use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
-
 use core::mem::MaybeUninit;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
+
 use unchecked_unwrap::UncheckedUnwrap;
 
+use crate::objectpath::ObjectPath;
+use crate::prelude::*;
 use crate::identifier_kind::*;
 use crate::rev_cursor;
 
@@ -18,14 +18,13 @@ use crate::rev_cursor;
 const BITS_IN_BINARY_ID: usize = 256;
 const KIND_ID_LEN: usize = 1;
 
-/**
-Identifiers are generated from a 'IdentifierKind' descriptor and a 'IdentifierBin' hash or
-random number. They represented as 'flipbase64' strings. That is base64 encoded strings of
-size FLIPBASE64_LEN written backwards. This backwards encoding allows fair distribution within
-the objectstore directory hierarchy while still encoding the 'IdentifierKind' first and only
-decode the first (last) 2 bytes for its decoding (the decoded identifier itself is rarely
-needed).
-**/
+/// Identifiers are generated from a 'IdentifierKind' descriptor and a
+/// 'IdentifierBin' hash or random number. They represented as 'flipbase64'
+/// strings. That is base64 encoded strings of size FLIPBASE64_LEN written
+/// backwards. This backwards encoding allows fair distribution within
+/// the objectstore directory hierarchy while still encoding the
+/// 'IdentifierKind' first and only decode the first (last) 2 bytes for its
+/// decoding (the decoded identifier itself is rarely needed).
 
 const BINARY_ID_LEN: usize = (BITS_IN_BINARY_ID + 7) / 8;
 const FLIPBASE64_LEN: usize = (BITS_IN_BINARY_ID + KIND_ID_LEN * 8 + 5) / 6;
@@ -39,7 +38,7 @@ pub struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
 #[derive(PartialEq, Clone)]
 pub struct Identifier {
-    kind: IdentifierKind,
+    kind:   IdentifierKind,
     base64: Flipbase64,
 }
 
@@ -196,13 +195,13 @@ impl IdentifierBuilder {
         );
 
         unsafe {
-            encoder.write(&[self.0 .0]).unchecked_unwrap();
+            encoder.write(&[self.0.0]).unchecked_unwrap();
             encoder.write(&binary.0).unchecked_unwrap();
         }
         drop(encoder);
 
         Identifier {
-            kind: self.0,
+            kind:   self.0,
             base64: unsafe { Flipbase64(MaybeUninit::array_assume_init(base64)) },
         }
     }

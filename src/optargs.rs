@@ -15,7 +15,9 @@ pub fn uberallfs_optargs() -> App<'static, 'static> {
         .arg(
             Arg::with_name("background")
                 .long("background")
-                .help("Fork into background, if applicable, enables logging to syslog when no --logfile is given"),
+                .help(
+                    "Fork into background, if applicable, enables logging to syslog when no --logfile is given",
+                )
         )
         .arg(
             Arg::with_name("foreground")

@@ -1,10 +1,9 @@
-use crate::prelude::*;
-
 use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
+use crate::prelude::*;
 use crate::identifier::Identifier;
 
 #[inline]
@@ -14,7 +13,7 @@ pub fn from_bytes(bytes: &[u8]) -> PathBuf {
 }
 
 pub trait ObjectPath {
-    //TODO: see testpath/absolutize
+    // TODO: see testpath/absolutize
     fn normalize(&mut self) -> Result<&mut Self>;
 
     fn push_identifier(&mut self, identifier: &Identifier) -> &mut Self;
@@ -23,7 +22,8 @@ pub trait ObjectPath {
 }
 
 impl ObjectPath for PathBuf {
-    /// normalize a path by removing all current dir ('.') and parent dir ('*/..') references.
+    /// normalize a path by removing all current dir ('.') and parent dir
+    /// ('*/..') references.
     fn normalize(&mut self) -> Result<&mut Self> {
         let mut new_path = PathBuf::new();
         for p in self.iter() {
@@ -42,7 +42,7 @@ impl ObjectPath for PathBuf {
         Ok(self)
     }
 
-    //TODO: push subobject
+    // TODO: push subobject
 
     fn push_identifier(&mut self, identifier: &Identifier) -> &mut Self {
         let bytes = identifier.id_base64().0;

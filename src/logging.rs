@@ -1,5 +1,6 @@
 use std::io;
 use std::sync::atomic::{AtomicU64, Ordering};
+
 use uberall::{
     chrono,
     clap::{AppSettings, ArgMatches},
@@ -79,8 +80,8 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
         let syslog_formatter = syslog::Formatter3164 {
             facility: syslog::Facility::LOG_USER,
             hostname: None,
-            process: "uberallfs".to_owned(),
-            pid: 0,
+            process:  "uberallfs".to_owned(),
+            pid:      0,
         };
         logger = logger.chain(syslog::unix(syslog_formatter).expect("syslog opened"));
     }

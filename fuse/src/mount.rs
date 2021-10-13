@@ -1,13 +1,12 @@
-use crate::prelude::*;
+use std::ffi::{OsStr, OsString};
 
 use uberall::{
     addy::{self, Signal::*},
     clap::{self, ArgMatches},
 };
-
 use fuser::MountOption;
-use std::ffi::{OsStr, OsString};
 
+use crate::prelude::*;
 use crate::uberallfs::UberallFS;
 
 pub(crate) fn opt_mount(mountpoint: &OsStr, matches: &ArgMatches) -> Result<()> {

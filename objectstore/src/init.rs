@@ -1,19 +1,17 @@
-use crate::prelude::*;
-
 use std::fs::{self, create_dir_all};
 use std::path::{Path, PathBuf};
-use uberall::clap::ArgMatches;
-
 use std::ffi::OsStr;
-
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 
+use uberall::clap::ArgMatches;
+
+use crate::prelude::*;
 use crate::identifier_kind::*;
 use crate::objectstore::ObjectStore;
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
-    //PLANNED: can this be integrated in the clap validator?
+    // PLANNED: can this be integrated in the clap validator?
     //   https://github.com/clap-rs/clap/discussions/2387
     // allow init when dir:
     //   - is not a symlink AND
@@ -112,7 +110,7 @@ pub(crate) fn init(dir: &Path) -> Result<()> {
         &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
     for a in URL_SAFE_ENCODE.iter() {
         for b in URL_SAFE_ENCODE.iter() {
-            //PLANNED: objects/delete/ab/
+            // PLANNED: objects/delete/ab/
             objectstore_dir.push(OsStr::from_bytes(&[*a, *b]));
             create_dir_all(&objectstore_dir)?;
             objectstore_dir.pop();

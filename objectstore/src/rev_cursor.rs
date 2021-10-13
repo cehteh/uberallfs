@@ -1,14 +1,12 @@
-/*!
-reverse cursor over &[u8]
-*/
-
-use crate::prelude::*;
+//! reverse cursor over &[u8]
 
 use core::mem::MaybeUninit;
 
+use crate::prelude::*;
+
 pub struct WriteCursor<'a> {
     array: &'a mut [MaybeUninit<u8>],
-    pos: usize,
+    pos:   usize,
 }
 
 impl<'a> WriteCursor<'a> {
@@ -36,7 +34,7 @@ impl io::Write for WriteCursor<'_> {
 
 pub struct ReadCursor<'a> {
     array: &'a [u8],
-    pos: usize,
+    pos:   usize,
 }
 
 impl ReadCursor<'_> {

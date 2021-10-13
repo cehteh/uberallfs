@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use std::convert::TryInto;
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
@@ -11,6 +9,7 @@ use openat::{Dir, Metadata};
 use regex::bytes::Regex;
 use uberall::{lazy_static::lazy_static, libc, UberAll};
 
+use crate::prelude::*;
 use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
 
 pub struct Meta;
@@ -20,22 +19,21 @@ pub struct ObjectStore {
     #[allow(dead_code)]
     version: u32,
     #[allow(dead_code)]
-    handle: Dir,
+    handle:  Dir,
     objects: Dir,
 
     uberall: UberAll,
-    //log: File, //TODO: logging 'dangerous' actions to be undone
-
-    //PLANNED: pid: dir stack for all open dir handles (cwd/parents)
-
-    //PLANNED: fd/object cache (drop handles when permissions get changed), MRU
-    //PLANNED: identifier hash
+    /* TODO: log: File, logging 'dangerous' actions to be undone
+     * PLANNED: pid: dir stack for all open dir handles (cwd/parents)
+     * PLANNED: fd/object cache (drop handles when permissions get changed), MRU
+     * PLANNED: identifier hash */
 }
 
 /// The ObjectStore
 impl ObjectStore {
-    /// reads the objectstore version on disk. This defines the layout of the files on disk.
-    /// Version '0' is a everlasting development and incompatible with anything else version.
+    /// reads the objectstore version on disk. This defines the layout of the
+    /// files on disk. Version '0' is a everlasting development and
+    /// incompatible with anything else version.
     fn get_version(dir: &Path) -> Result<u32> {
         use std::io::{BufRead, BufReader};
 
@@ -99,7 +97,8 @@ impl ObjectStore {
         }
     }
 
-    /// Takes a abbrevitated identifier as string and returns the full identifier object if exists
+    /// Takes a abbrevitated identifier as string and returns the full
+    /// identifier object if exists
     pub(crate) fn identifier_lookup(&self, abbrev: &OsStr) -> Result<Identifier> {
         trace!("prefix: {:?}", abbrev);
         match abbrev.len() {
@@ -112,7 +111,7 @@ impl ObjectStore {
             len if len == 44 => {
                 let path = objectpath::from_bytes(&abbrev.as_bytes()[..2]).join(abbrev);
                 self.objects.metadata(path.as_os_str())?;
-                //TODO: look into deleted objects / revive
+                // TODO: look into deleted objects / revive
                 Identifier::from_flipbase64(Flipbase64(abbrev.as_bytes().try_into()?))
             }
             _ => {
@@ -131,7 +130,7 @@ impl ObjectStore {
                         }
                     }
                 }
-                //TODO: look into deleted objects / revive
+                // TODO: look into deleted objects / revive
 
                 Identifier::from_flipbase64(Flipbase64(
                     found
@@ -146,9 +145,11 @@ impl ObjectStore {
     /// Do full path lookups
     /// Paths can start with:
     ///  - a single slash, then path traversal starts at the root
-    ///  - an abbrevitated Identifier followed by a double slash '//', then the traversal starts there
-    /// The path is traversed as much as possible, optionally storing the identifiers (parents) leading to that.
-    /// Returns the finally found identifiers and the rest of the path thats is not existant.
+    ///  - an abbrevitated Identifier followed by a double slash '//', then the
+    ///    traversal starts there
+    /// The path is traversed as much as possible, optionally storing the
+    /// identifiers (parents) leading to that. Returns the finally found
+    /// identifiers and the rest of the path thats is not existant.
     pub fn path_lookup(
         &self,
         path: &Path,
@@ -193,7 +194,7 @@ impl ObjectStore {
         path: PathBuf,
         _parents: Option<&mut Vec<Identifier>>,
     ) -> Result<(Identifier, PathBuf)> {
-        //TODO: track parents
+        // TODO: track parents
         let mut out = PathBuf::new();
 
         let mut still_going = true;
@@ -260,7 +261,7 @@ impl ObjectStore {
         _metadata: Meta,
         _perm: FilePermissions, // readwrite or readonly for immutable metadata
     ) -> Result<Handle> {
-        //access: FileAccess, -> always readwrite
+        // access: FileAccess, -> always readwrite
         unimplemented!()
     }
 
@@ -271,7 +272,7 @@ impl ObjectStore {
         _perm: FilePermissions,
         _attr: FileAttributes,
     ) -> Result<Handle> {
-        //Self::ensure_dir(object.0)?;
+        // Self::ensure_dir(object.0)?;
         unimplemented!()
     }
 
@@ -292,11 +293,12 @@ impl ObjectStore {
         _attr: FileAttributes,
     ) -> Result<Handle> {
         identifier.ensure_file()?;
-        //Self::ensure_dir(object.0);
+        // Self::ensure_dir(object.0);
         unimplemented!()
     }
 
-    /// Create a link from 'parent' directory (identifier/name pair) to the given identifier
+    /// Create a link from 'parent' directory (identifier/name pair) to the
+    /// given identifier
     pub(crate) fn create_link(&self, identifier: &Identifier, parent: SubObject) -> Result<()> {
         parent.0.ensure_dir()?;
 
@@ -369,11 +371,11 @@ impl ObjectStore {
         self.objects.metadata(identifier.to_pathbuf().as_path())
     }
 
-    //pub fn remove_object // move to deleted (w/ link)
+    // pub fn remove_object // move to deleted (w/ link)
 
-    //pub fn revive_object // move from deleted
+    // pub fn revive_object // move from deleted
 
-    //pub fn cleanup_deleted // delete expired objects
+    // pub fn cleanup_deleted // delete expired objects
 
     /// Registers the objectstores root directory to 'identifier'.
     pub(crate) fn set_root(&self, identifier: &Identifier) -> Result<()> {
@@ -403,13 +405,12 @@ impl SubObject<'_> {
     }
 }
 
-/*
-These are permissions/access flages of the objects in the objectstore, abstrated from host
-filesystem implementation.
-
-For the first implementation uberallfs is single user/group on the local objectstore and fuse
-frontend only (This does not affect permissions and security globally).
- */
+// These are permissions/access flages of the objects in the objectstore,
+// abstrated from host filesystem implementation.
+//
+// For the first implementation uberallfs is single user/group on the local
+// objectstore and fuse frontend only (This does not affect permissions and
+// security globally).
 
 #[cfg(unix)]
 #[derive(Default)]

@@ -1,18 +1,18 @@
-use crate::prelude::*;
-use crate::serde::{Deserialize, Serialize};
-use ipc_channel::ipc;
-use once_cell::sync::OnceCell;
-
 use std::ffi::OsString;
 use std::process;
 
+use ipc_channel::ipc;
+use once_cell::sync::OnceCell;
 use clap::{AppSettings, ArgMatches};
+
+use crate::prelude::*;
+use crate::serde::{Deserialize, Serialize};
 
 static PIDFILE: OnceCell<OsString> = OnceCell::new();
 static DAEMONIZE: OnceCell<bool> = OnceCell::new();
 
-/// process commandline args: allow to fork in the background when explicitly requested or
-/// debugging is not enabled.
+/// process commandline args: allow to fork in the background when explicitly
+/// requested or debugging is not enabled.
 pub fn init_daemonize(matches: &ArgMatches) {
     DAEMONIZE
         .set(
@@ -98,12 +98,12 @@ pub fn maybe_daemonize<F: FnOnce(Option<ipc::IpcSender<CallbackMessage>>) -> Res
 
 pub type CallbackTx = ipc::IpcSender<CallbackMessage>;
 
-/// The callback state, may hold the callback function and the sending side of the IPC channel
-/// to the parent.
+/// The callback state, may hold the callback function and the sending side of
+/// the IPC channel to the parent.
 #[derive(Default)]
 pub struct Callback {
     callback: Option<Box<dyn FnOnce(CallbackTx, CallbackMessage)>>,
-    tx: Option<CallbackTx>,
+    tx:       Option<CallbackTx>,
 }
 
 impl Callback {
@@ -136,7 +136,7 @@ impl Callback {
 pub struct CallbackMessage {
     is_error: bool,
     os_error: Option<i32>,
-    message: String,
+    message:  String,
 }
 
 impl CallbackMessage {
@@ -145,7 +145,7 @@ impl CallbackMessage {
         Self {
             is_error: true,
             os_error: error.raw_os_error(),
-            message: error.to_string(),
+            message:  error.to_string(),
         }
     }
 
@@ -154,7 +154,7 @@ impl CallbackMessage {
         Self {
             is_error: true,
             os_error: None,
-            message: "No reply from child".to_string(),
+            message:  "No reply from child".to_string(),
         }
     }
 
@@ -163,7 +163,7 @@ impl CallbackMessage {
         Self {
             is_error: false,
             os_error: None,
-            message: "".to_string(),
+            message:  "".to_string(),
         }
     }
 }

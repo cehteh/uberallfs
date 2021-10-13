@@ -1,9 +1,9 @@
-use crate::prelude::*;
-
 use rand::distributions::Standard;
 use rand::prelude::*;
 use rand_core::OsRng;
 use rand_hc::Hc128Rng;
+
+use crate::prelude::*;
 
 /// Shared Application state
 #[derive(Debug)]
@@ -25,7 +25,8 @@ impl UberAll {
         self.rng.gen()
     }
 
-    //PLANNED: provide multiple mutex<queues> of u8 filled with randoms by a thread which get woken
-    // up when any queue hits lowwater. trylock these round robin to acquire randoms.
-    // keep start index for roundrobin in a atomic counter
+    // PLANNED: provide multiple mutex<queues> of u8 filled with randoms by a thread
+    // which get woken up when any queue hits lowwater. trylock these round
+    // robin to acquire randoms. keep start index for roundrobin in a atomic
+    // counter
 }

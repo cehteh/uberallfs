@@ -1,13 +1,12 @@
-use crate::prelude::*;
-
 use std::collections::hash_map::HashMap;
 use std::sync::Arc;
 
 use uberall::parking_lot::Mutex;
-
 use objectstore::Identifier;
 
-//PLANNED: may become a disk backed implementation since this can become big
+use crate::prelude::*;
+
+// PLANNED: may become a disk backed implementation since this can become big
 #[derive(Debug)]
 pub(crate) struct Entry {
     identifier: Identifier,
@@ -22,7 +21,7 @@ impl Entry {
 /// Relate local inode numbers to uberallfs identifiers
 #[derive(Debug)]
 pub(crate) struct InodeDb {
-    //PLANNED: caches / reduce lock contention maybe array of Mutex<HashMap<...>>
+    // PLANNED: caches / reduce lock contention maybe array of Mutex<HashMap<...>>
     inode_to_identifier: Mutex<HashMap<u64, Arc<Entry>>>,
 }
 
@@ -44,7 +43,7 @@ impl InodeDb {
 
     pub fn get(&mut self, inode: u64) -> Option<Arc<Entry>> {
         let inode_to_identifier = self.inode_to_identifier.lock();
-        //PLANNED: touch/refresh self.inodedb caches
+        // PLANNED: touch/refresh self.inodedb caches
         inode_to_identifier
             .get(&inode)
             .map(|entry| Arc::clone(entry))

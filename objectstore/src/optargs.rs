@@ -100,7 +100,7 @@ fn send_optargs() -> App<'static, 'static> {
                 .required(true)
                 .help("The object to export"),
         )
-        //TODO:  glob type compress
+        // TODO:  glob type compress
         .arg(
             Arg::with_name("recursive")
                 .short("r")
@@ -124,7 +124,7 @@ fn send_optargs() -> App<'static, 'static> {
 fn receive_optargs() -> App<'static, 'static> {
     SubCommand::with_name("receive")
         .about("Imports objects")
-        //TODO:  glob type
+        // TODO:  glob type
         .arg(
             Arg::with_name("recursive")
                 .short("r")

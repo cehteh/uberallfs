@@ -1,7 +1,6 @@
 use crate::prelude::*;
-
 use crate::objectstore::{DirectoryPermissions, ObjectStore};
-//use serde::{Serialize, Deserialize};
+// use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
 pub struct Acl;
@@ -14,13 +13,13 @@ use crate::identifier_kind::*;
 /// An Objectstore object
 pub struct Object {
     pub identifier: Identifier,
-    opts: ObjectImpl,
+    opts:           ObjectImpl,
 }
 
 /// Builder Type for incomplete Objects
 pub struct ObjectBuilder {
     identifier: IdentifierBuilder,
-    opts: ObjectImpl,
+    opts:       ObjectImpl,
 }
 
 impl Object {
@@ -34,14 +33,18 @@ impl Object {
         let kind = IdentifierKind::create(object_type, sharing_policy, mutability);
         ObjectBuilder {
             identifier: Identifier::build(kind),
-            opts: ObjectImpl::new(kind),
+            opts:       ObjectImpl::new(kind),
         }
     }
+
+    // TODO: open existing
+    // TODO: create from immutable file (checksummed)
+    // pub fn get_identifier
 }
 
 impl ObjectBuilder {
     /// May attach an acl to an object
-    //TODO: multiple acl's then not option but conditional incremental
+    // TODO: multiple acl's then not option but conditional incremental
     #[must_use = "configure the builder and finally call realize()"]
     pub fn acl(self, acl: &Option<Acl>) -> Self {
         match acl {
@@ -51,8 +54,8 @@ impl ObjectBuilder {
         self
     }
 
-    /// Realizes the final Object. This creates the respective files in the backing
-    /// 'Objectstore'.
+    /// Realizes the final Object. This creates the respective files in the
+    /// backing 'Objectstore'.
     pub fn realize(self, objectstore: &mut ObjectStore) -> Result<Object> {
         self.opts.realize(self.identifier, objectstore)
     }
@@ -65,8 +68,8 @@ enum ObjectImpl {
     PrivateMutable,
     PublicImmutableFile {
         creator: Option<Creator>,
-        acl: Option<Acl>,
-        //from file
+        acl:     Option<Acl>,
+        // from file
     },
 }
 
@@ -78,7 +81,7 @@ impl ObjectImpl {
             (_, Private, Mutable) => ObjectImpl::PrivateMutable,
             (File, PublicAcl, Immutable) => ObjectImpl::PublicImmutableFile {
                 creator: None,
-                acl: None,
+                acl:     None,
             },
             _ => ObjectImpl::NotSupported,
         }

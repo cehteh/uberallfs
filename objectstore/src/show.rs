@@ -1,12 +1,11 @@
-use crate::prelude::*;
-
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
-use uberall::clap::ArgMatches;
-
 use std::ffi::OsStr;
 
+use uberall::clap::ArgMatches;
+
+use crate::prelude::*;
 use crate::objectstore::ObjectStore;
 
 pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {

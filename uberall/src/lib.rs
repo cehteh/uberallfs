@@ -1,6 +1,8 @@
 pub mod daemon;
 mod prelude;
 mod uberall;
+use std::error::Error;
+
 pub use addy;
 pub use chrono;
 pub use clap;
@@ -14,9 +16,7 @@ pub use serde;
 pub use syslog;
 pub use thiserror;
 pub use uberall::UberAll;
-
 use prelude::*;
-use std::error::Error;
 
 pub fn error_to_exitcode(error: Box<dyn Error>) -> i32 {
     error

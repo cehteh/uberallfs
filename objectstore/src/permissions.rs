@@ -15,7 +15,7 @@ enum KeyExpirePolicy {
         at: time::Instant,
     },
     Idle {
-        at: time::Instant,
+        at:        time::Instant,
         idle_time: time::Duration,
     },
 }
@@ -23,15 +23,15 @@ enum KeyExpirePolicy {
 #[derive(PartialEq, Eq, Hash, Debug)]
 struct AuthenticatedEntry {
     uid: UserId,
-    //PLANNED: pubkey: PublicKey,
+    // PLANNED: pubkey: PublicKey,
 }
 
 /// stores authenticated keys
 #[derive(Debug)]
 pub struct PermissionController {
-    objectstore: Arc<ObjectStore>,
+    objectstore:   Arc<ObjectStore>,
     authenticated: HashMap<AuthenticatedEntry, KeyExpirePolicy>,
-    gc_countdown: usize,
+    gc_countdown:  usize,
 }
 
 impl PermissionController {
@@ -44,9 +44,9 @@ impl PermissionController {
         }
     }
 
-    //PLANNED: improve gc, can expire things at lockup/hash-collisions already
+    // PLANNED: improve gc, can expire things at lockup/hash-collisions already
     fn garbage_collect(&mut self) {
-        //TODO: gc test
+        // TODO: gc test
         self.gc_countdown -= 1;
         if self.gc_countdown == 0 {
             let now = time::Instant::now();
@@ -63,11 +63,13 @@ impl PermissionController {
         }
     }
 
-    //PLANNED:    fn lookup(&mut self) { update incremental expire
+    // PLANNED:    fn lookup(&mut self) { update incremental expire
 
-    //PLANNED: Keys are authenticated by requesting a challenge against a pubkey. When this
-    //+ challenge succeeds then the Pubkey is stored as being authorized. This allowes for
-    //+ handling all private key handling on a dedicated process outside of the vfs instance.
+    // PLANNED: Keys are authenticated by requesting a challenge against a pubkey.
+    // When this
+    //+ challenge succeeds then the Pubkey is stored as being authorized. This
+    //+ allowes for handling all private key handling on a dedicated process
+    //+ outside of the vfs instance.
     //    pub fn auth_key(uid, PubKey, expire_policy) -> Result<Challenge> {
     //        todo!()
     //    }
@@ -94,7 +96,7 @@ impl PermissionController {
 pub struct PermissionCheck<'a> {
     controller: &'a PermissionController,
     identifier: &'a Identifier,
-    uid: Option<UserId>,
+    uid:        Option<UserId>,
 }
 
 use Mutability::*;

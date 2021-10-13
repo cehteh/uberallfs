@@ -4,12 +4,12 @@ use std::ffi::OsStr;
 use std::io;
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
+
 use tempfile::TempDir;
 use uberall::{lazy_static::lazy_static, libc};
-
 use bintest::BinTest;
-
 use testcall::*;
+use testpath::*;
 
 lazy_static! {
     static ref EXECUTABLES: BinTest = BinTest::new();

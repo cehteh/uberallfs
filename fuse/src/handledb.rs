@@ -1,11 +1,10 @@
-use crate::prelude::*;
-
 use std::io;
 use std::sync::Arc;
 
 use uberall::{libc, parking_lot::Mutex};
-
 use objectstore::Handle;
+
+use crate::prelude::*;
 
 type NextFree = usize;
 
@@ -19,7 +18,7 @@ use Entry::*;
 
 #[derive(Debug)]
 pub struct HandleDb {
-    handles: Mutex<Vec<Entry>>,
+    handles:  Mutex<Vec<Entry>>,
     free_idx: NextFree, // linked list of free positions
 }
 
@@ -31,7 +30,7 @@ impl HandleDb {
         handles.push(Invalid(0));
 
         Ok(HandleDb {
-            handles: Mutex::new(handles),
+            handles:  Mutex::new(handles),
             free_idx: 0,
         })
     }

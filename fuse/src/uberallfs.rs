@@ -1,26 +1,22 @@
-use crate::prelude::*;
-
 use std::ffi::OsStr;
 use std::fmt;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use uberall::libc;
-
 use uberall::daemon;
-
 use objectstore::{Identifier, ObjectType, VirtualFileSystem};
-
-use crate::{HandleDb, InodeDb};
-
 use fuser::{
     FileAttr, FileType, Filesystem, KernelConfig, MountOption, ReplyAttr, ReplyData,
     ReplyDirectory, ReplyEmpty, ReplyEntry, ReplyOpen, Request,
 };
 
+use crate::prelude::*;
+use crate::{HandleDb, InodeDb};
+
 pub struct UberallFS {
-    vfs: VirtualFileSystem,
-    inodedb: InodeDb,
+    vfs:      VirtualFileSystem,
+    inodedb:  InodeDb,
     handledb: HandleDb,
     callback: daemon::Callback,
 }
@@ -39,8 +35,8 @@ impl fmt::Debug for UberallFS {
 impl UberallFS {
     pub fn new(objectstore_dir: &Path) -> Result<UberallFS> {
         Ok(UberallFS {
-            vfs: VirtualFileSystem::new(objectstore_dir)?,
-            inodedb: InodeDb::new()?,
+            vfs:      VirtualFileSystem::new(objectstore_dir)?,
+            inodedb:  InodeDb::new()?,
             handledb: HandleDb::with_capacity(1024)?,
             callback: daemon::Callback::default(),
         })
@@ -74,7 +70,7 @@ impl UberallFS {
         let identifier = self.vfs.path_lookup(0, Path::new(root))?;
 
         self.inodedb.store(1, identifier);
-        //FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
+        // FIXME: for the real metadata/ino, make '1' a special case UberallFS::root_ino
         fuser::mount2(&mut self, mountpoint, &options).map_err(|err| {
             error!("mounting filesystem: {:?}", err);
             self.callback_once(daemon::CallbackMessage::from_io_error(&err));
@@ -84,7 +80,7 @@ impl UberallFS {
 }
 
 impl Filesystem for &mut UberallFS {
-    //PLANNED: investigate what to do async
+    // PLANNED: investigate what to do async
 
     fn init(
         &mut self,
@@ -120,7 +116,7 @@ impl Filesystem for &mut UberallFS {
                     return reply.entry(
                         &Duration::from_secs(600),
                         &stat_to_fileattr(metadata.stat(), identifier_to_filetype(sub_id)),
-                        0, //TODO: generation
+                        0, // TODO: generation
                     );
                 }
             }
@@ -233,43 +229,41 @@ impl Filesystem for &mut UberallFS {
     //      */
     // }
 
-    /*
-    //TODO:
-        pub fn init(
-        pub fn destroy(&mut self, _req: &Request<'_>) { ... }
-        pub fn forget(&mut self, _req: &Request<'_>, _ino: u64, _nlookup: u64) { ... }
-        pub fn getattr(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyAttr) { ... }
-        pub fn setattr(
-        pub fn readlink(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyData) { ... }
-        pub fn mknod(
-        pub fn mkdir(
-        pub fn unlink(
-        pub fn rmdir(
-        pub fn symlink(
-        pub fn rename(
-        pub fn link(
-        pub fn open(
-        pub fn read(
-        pub fn write(
-        pub fn flush(
-        pub fn release(
-        pub fn fsync(
-        pub fn readdirplus(
-        pub fn fsyncdir(
-        pub fn statfs(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyStatfs) { ... }
-        pub fn setxattr(
-        pub fn getxattr(
-        pub fn listxattr(
-        pub fn removexattr(
-        pub fn create(
-        pub fn getlk(
-        pub fn setlk(
-        pub fn bmap(
-        pub fn ioctl(
-        pub fn fallocate(
-        pub fn lseek(
-        pub fn copy_file_range(
-     */
+    // TODO:
+    // pub fn init(
+    // pub fn destroy(&mut self, _req: &Request<'_>) { ... }
+    // pub fn forget(&mut self, _req: &Request<'_>, _ino: u64, _nlookup: u64) { ... }
+    // pub fn getattr(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyAttr) { ... }
+    // pub fn setattr(
+    // pub fn readlink(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyData) { ... }
+    // pub fn mknod(
+    // pub fn mkdir(
+    // pub fn unlink(
+    // pub fn rmdir(
+    // pub fn symlink(
+    // pub fn rename(
+    // pub fn link(
+    // pub fn open(
+    // pub fn read(
+    // pub fn write(
+    // pub fn flush(
+    // pub fn release(
+    // pub fn fsync(
+    // pub fn readdirplus(
+    // pub fn fsyncdir(
+    // pub fn statfs(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyStatfs) { ... }
+    // pub fn setxattr(
+    // pub fn getxattr(
+    // pub fn listxattr(
+    // pub fn removexattr(
+    // pub fn create(
+    // pub fn getlk(
+    // pub fn setlk(
+    // pub fn bmap(
+    // pub fn ioctl(
+    // pub fn fallocate(
+    // pub fn lseek(
+    // pub fn copy_file_range(
 }
 
 fn unix_to_system_time(sec: libc::time_t, ns: i64) -> SystemTime {
@@ -292,9 +286,9 @@ fn stat_to_fileattr(stat: &libc::stat, kind: FileType) -> FileAttr {
         atime: unix_to_system_time(stat.st_atime, stat.st_atime_nsec),
         mtime: unix_to_system_time(stat.st_mtime, stat.st_mtime_nsec),
         ctime: unix_to_system_time(stat.st_ctime, stat.st_ctime_nsec),
-        crtime: UNIX_EPOCH, //unused
+        crtime: UNIX_EPOCH, // unused
         kind,
-        perm: stat.st_mode as u16, //FIXME: not sure
+        perm: stat.st_mode as u16, // FIXME: not sure
         nlink: stat.st_nlink as u32,
         uid: stat.st_uid,
         gid: stat.st_gid,

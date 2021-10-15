@@ -207,21 +207,17 @@ impl ObjectStore {
                         trace!("subobject: ok {:?}", &r);
                         root = r;
                     }
-                    Err(err) => match err.downcast_ref::<io::Error>() {
-                        Some(ioerr) => match ioerr.kind() {
-                            io::ErrorKind::NotFound => {
-                                // execpted case, just push path together
-                                trace!("subobject: {:?}", &err);
-                                still_going = false;
-                                out.push(p);
-                            }
-                            _ => {
-                                // unexpected error
-                                error!("subobject: {:?}", &err);
-                                return Err(err);
-                            }
-                        },
-                        None => {
+                    Err(err) => match err
+                        .downcast_ref::<io::Error>()
+                        .and_then(|ioerr| Some(ioerr.kind()))
+                    {
+                        Some(io::ErrorKind::NotFound) => {
+                            // execpted case, just push path together
+                            trace!("subobject: {:?}", &err);
+                            still_going = false;
+                            out.push(p);
+                        }
+                        Some(_) | None => {
                             // unexpected error
                             error!("subobject: {:?}", &err);
                             return Err(err);

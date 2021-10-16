@@ -30,7 +30,10 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         debug!("mkdir: {:?} / {:?}", src.as_os_str(), remaining.as_os_str());
 
         if remaining.components().next() == None {
-            return Err(ObjectStoreError::ObjectExists.into());
+            return Err(ObjectStoreError::ObjectExists(
+                matches.value_of_os("PATH").unwrap().into(),
+            )
+            .into());
         }
 
         let count = remaining.components().count();
@@ -53,11 +56,9 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                     src = object.identifier;
                 }
             } else {
-                warn!(
-                    "Parent dir missing, no -p given: {:?}",
-                    remaining.components().next().unwrap().as_os_str()
-                );
-                return Err(ObjectStoreError::NoParent.into());
+                let name = remaining.components().next().unwrap().as_os_str().into();
+                warn!("Parent dir missing, no -p given: {:?}", &name);
+                return Err(ObjectStoreError::ObjectNotFound(name).into());
             }
         }
 

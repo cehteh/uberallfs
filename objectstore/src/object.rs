@@ -108,7 +108,9 @@ impl ObjectImpl {
                 todo!();
             }
 
-            ObjectImpl::NotSupported => Err(ObjectStoreError::UnsupportedObjectType.into()),
+            ObjectImpl::NotSupported => {
+                Err(ObjectStoreError::UnsupportedObjectType(identifier.components()).into())
+            }
         }
     }
 }

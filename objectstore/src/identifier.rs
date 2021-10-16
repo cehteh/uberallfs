@@ -205,4 +205,12 @@ impl IdentifierBuilder {
             base64: unsafe { Flipbase64(MaybeUninit::array_assume_init(base64)) },
         }
     }
+
+    pub(crate) fn components(&self) -> (ObjectType, SharingPolicy, Mutability) {
+        (
+            self.0.object_type(),
+            self.0.sharing_policy(),
+            self.0.mutability(),
+        )
+    }
 }

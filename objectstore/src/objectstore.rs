@@ -307,7 +307,7 @@ impl ObjectStore {
             && file_name.as_bytes()[..crate::RESERVED_PREFIX.len()] == crate::RESERVED_PREFIX
         {
             warn!("link: illegal file name: {:?}", &file_name);
-            Err(ObjectStoreError::IllegalFileName.into())
+            Err(ObjectStoreError::IllegalFileName(file_name.into()).into())
         } else {
             trace!("link: {:?} -> {:?}", source.as_os_str(), dest.as_os_str());
 

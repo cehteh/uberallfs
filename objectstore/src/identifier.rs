@@ -87,9 +87,9 @@ impl TryFrom<&Flipbase64> for IdentifierKind {
 }
 
 impl Identifier {
-    pub fn ensure_dir(&self) -> Result<()> {
+    pub fn ensure_dir(&self) -> Result<&Self> {
         if self.object_type() == ObjectType::Directory {
-            Ok(())
+            Ok(self)
         } else {
             Err(ObjectStoreError::ObjectType {
                 have: self.object_type(),
@@ -99,9 +99,9 @@ impl Identifier {
         }
     }
 
-    pub fn ensure_file(&self) -> Result<()> {
+    pub fn ensure_file(&self) -> Result<&Self> {
         if self.object_type() == ObjectType::File {
-            Ok(())
+            Ok(self)
         } else {
             Err(ObjectStoreError::ObjectType {
                 have: self.object_type(),

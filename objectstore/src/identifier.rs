@@ -155,6 +155,10 @@ impl Identifier {
         unsafe { (&self.base64).try_into().unchecked_unwrap() }
     }
 
+    pub(crate) fn kind(&self) -> IdentifierKind {
+        self.kind
+    }
+
     pub fn object_type(&self) -> ObjectType {
         self.kind.object_type()
     }

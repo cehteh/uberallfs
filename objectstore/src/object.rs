@@ -37,7 +37,15 @@ impl Object {
         }
     }
 
-    // TODO: open existing
+    /// Create an Object from an existing Identifier
+    pub fn from(identifier: Identifier) -> Object {
+        let kind = identifier.kind();
+        Object {
+            identifier,
+            opts: ObjectImpl::new(kind),
+        }
+    }
+
     // TODO: create from immutable file (checksummed)
     // pub fn get_identifier
 }

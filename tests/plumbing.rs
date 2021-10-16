@@ -85,3 +85,24 @@ fn mkdir_parent() {
         .call_argstr("-dd objectstore teststore/ show /test/dir/inner")
         .assert_success();
 }
+
+#[test]
+fn mkdir_linked() {
+    let mut uberallfs = TestCall::new(&EXECUTABLES, "uberallfs");
+    let tempdir = TempDir::new().expect("created tempdir");
+    uberallfs.current_dir(&tempdir);
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ init")
+        .assert_success();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ mkdir /test1")
+        .assert_success();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ mkdir -l /test1 /test2")
+        .assert_success();
+    uberallfs
+        .call_argstr("-dd objectstore teststore/ show /test2")
+        .assert_success();
+
+    // TODO: assert test1 and test2 are the same objects
+}

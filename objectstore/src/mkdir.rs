@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
 
 use uberall::clap::ArgMatches;
@@ -62,15 +62,26 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
             }
         }
 
-        let object = match matches.value_of("SOURCE") {
-            Some(_base64) => {
+        let object = match matches.value_of_os("SOURCE") {
+            Some(path) => {
                 if acl.is_some() {
                     return Err(ObjectStoreError::OptArgError(String::from(
                         "ACL can only be used with new objects",
                     ))
                     .into());
                 };
-                unimplemented!("use existing object")
+
+                let (source_id, empty) = objectstore.path_lookup(Path::new(path), None)?;
+
+                if empty.as_os_str().is_empty() {
+                    trace!("found source identifier: {:?}", source_id);
+                    source_id.ensure_dir()?;
+                } else {
+                    warn!("source not found: {:?}", path);
+                    return Err(ObjectStoreError::ObjectNotFound(path.into()).into());
+                }
+
+                Object::from(source_id)
             }
 
             None => Object::build(ObjectType::Directory, sharing_policy, Mutability::Mutable)

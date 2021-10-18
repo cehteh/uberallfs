@@ -1,3 +1,5 @@
+use openat_ct as openat;
+
 #[derive(Debug)]
 pub enum Handle {
     Dir(openat::Dir),

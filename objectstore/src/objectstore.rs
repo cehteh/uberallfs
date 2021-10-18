@@ -5,6 +5,7 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::prelude::RawFd;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
 
+use openat_ct as openat;
 use openat::{Dir, Metadata};
 use regex::bytes::Regex;
 use uberall::{lazy_static::lazy_static, libc, UberAll};

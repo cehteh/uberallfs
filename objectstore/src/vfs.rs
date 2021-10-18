@@ -3,6 +3,7 @@ use std::io;
 use std::path::Path;
 use std::sync::Arc;
 
+use openat_ct as openat;
 use openat::Metadata;
 use uberall::libc;
 

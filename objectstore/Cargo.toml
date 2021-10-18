@@ -10,5 +10,5 @@ edition = "2018"
 unchecked_unwrap = "3.0"
 base64 = "0.13"
 regex = "1"
-openat = { git = "https://github.com/cehteh/openat.git", branch = "master" }
+openat_ct = "0.1"
 uberall = { path = "../uberall" }

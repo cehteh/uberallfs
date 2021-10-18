@@ -10,6 +10,7 @@ pub fn optargs() -> App<'static, 'static> {
         )
         .setting(AppSettings::SubcommandRequired)
         .subcommand(init_optargs())
+        .subcommand(lock_optargs())
         .subcommand(show_optargs())
         .subcommand(mkdir_optargs())
         .subcommand(send_optargs())
@@ -38,6 +39,19 @@ fn init_optargs() -> App<'static, 'static> {
                 .long("import")
                 .takes_value(true)
                 .help("Import root directory"),
+        )
+}
+
+// Hidden option only for testing/diagnostics
+fn lock_optargs() -> App<'static, 'static> {
+    SubCommand::with_name("lock")
+        .setting(AppSettings::Hidden)
+        .about("Locks the objectstore (until CTRL-C is hit)")
+        .arg(
+            Arg::with_name("wait")
+                .short("w")
+                .long("wait")
+                .help("Wait for the lock"),
         )
 }
 

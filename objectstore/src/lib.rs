@@ -20,6 +20,7 @@ mod rev_cursor;
 mod vfs;
 
 mod init;
+mod lock;
 mod mkdir;
 mod show;
 
@@ -31,7 +32,7 @@ pub use permissions::{PermissionCheck, PermissionController};
 pub use vfs::VirtualFileSystem;
 
 pub use crate::objectpath::ObjectPath;
-pub use crate::objectstore::{ObjectStore, SubObject};
+pub use crate::objectstore::{LockingMethod, ObjectStore, SubObject};
 
 // PLANNED: mockup types defined and exported that dont have a implementation
 // yet
@@ -50,6 +51,7 @@ pub fn cmd(matches: &ArgMatches) -> Result<()> {
 
     match matches.subcommand() {
         ("init", Some(sub_m)) => init::opt_init(dir, sub_m),
+        ("lock", Some(sub_m)) => lock::opt_lock(dir, sub_m),
         ("mkdir", Some(sub_m)) => mkdir::opt_mkdir(dir, sub_m),
         ("show", Some(sub_m)) => show::opt_show(dir, sub_m),
         (name, _) => {

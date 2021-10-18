@@ -8,7 +8,7 @@ use uberall::clap::ArgMatches;
 
 use crate::prelude::*;
 use crate::identifier_kind::*;
-use crate::objectstore::ObjectStore;
+use crate::objectstore::{LockingMethod::*, ObjectStore};
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
     // PLANNED: can this be integrated in the clap validator?
@@ -49,7 +49,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
     init(dir)?;
 
-    let mut objectstore = ObjectStore::open(dir)?;
+    let mut objectstore = ObjectStore::open(dir, WaitForLock)?;
 
     use crate::object::Object;
     let maybe_root = if let Some(archive) = matches.value_of_os("ARCHIVE") {

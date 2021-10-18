@@ -6,10 +6,10 @@ use uberall::clap::ArgMatches;
 use crate::prelude::*;
 use crate::identifier_kind::*;
 use crate::object::Object;
-use crate::objectstore::{ObjectStore, SubObject};
+use crate::objectstore::{LockingMethod::*, ObjectStore, SubObject};
 
 pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let mut objectstore = ObjectStore::open(dir.as_ref())?;
+    let mut objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;
 
     let mut sharing_policy = SharingPolicy::Private;
 

@@ -8,7 +8,7 @@ use uberall::{
 };
 
 pub(crate) fn init_logging(matches: &ArgMatches) {
-    let mut verbosity_level = 1;
+    let mut verbosity_level = 2;
 
     if matches.is_present("quiet") {
         verbosity_level = 0;

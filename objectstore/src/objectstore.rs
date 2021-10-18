@@ -32,9 +32,9 @@ pub struct ObjectStore {
 
 /// The ObjectStore
 impl ObjectStore {
-    /// reads the objectstore version on disk. This defines the layout of the
-    /// files on disk. Version '0' is a everlasting development and
-    /// incompatible with anything else version.
+    /// reads the objectstore version on disk. This defines the layout of the files on
+    /// disk. Version '0' is a everlasting development and incompatible with any other
+    /// version (including itself from former development cycles).
     fn get_version(dir: &Path) -> Result<u32> {
         use std::io::{BufRead, BufReader};
 
@@ -54,14 +54,16 @@ impl ObjectStore {
     }
 
     /// Opens an ObjectStore at the given path.
-    pub fn open(dir: &Path) -> Result<ObjectStore> {
+    pub fn open(dir: &Path, locking_method: LockingMethod) -> Result<ObjectStore> {
+        let handle = Dir::flags().open(dir)?;
+        lock_fd(&handle, locking_method)?;
+
         let version = Self::get_version(dir)?;
         debug!("open {:?}, version: {}", dir, version);
         if version != crate::VERSION {
             return Err(ObjectStoreError::UnsupportedObjectStore(version).into());
         }
 
-        let handle = Dir::open(dir)?;
         let objects = handle.sub_dir("objects")?;
 
         Ok(ObjectStore {
@@ -391,6 +393,16 @@ impl Drop for ObjectStore {
     fn drop(&mut self) {}
 }
 
+/// Opening an objectstore will lock its directory, to obtain this lock there are two methods.
+///
+///  * TryLock:: Try to lock the objectstore and return an error immediately when that fails.
+///  * WaitForLock:: Wait until the lock becomes available.
+#[derive(PartialEq)]
+pub enum LockingMethod {
+    TryLock,
+    WaitForLock,
+}
+
 /// identifier/name pair for a subobject in a directory
 #[derive(Debug)]
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
@@ -546,5 +558,55 @@ impl DirectoryPermissions {
 
     fn get(self) -> libc::mode_t {
         self.0
+    }
+}
+
+/// Place an exclusive lock on a file descriptor
+#[cfg(unix)]
+fn lock_fd<T: std::os::unix::io::AsRawFd>(fd: &T, locking_method: LockingMethod) -> Result<()> {
+    let mut lockerr;
+
+    // first try locking without wait
+    loop {
+        lockerr = unsafe {
+            if libc::flock(fd.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) == -1 {
+                *libc::__errno_location()
+            } else {
+                0
+            }
+        };
+        if lockerr != libc::EINTR {
+            break;
+        };
+    }
+
+    if lockerr == libc::EWOULDBLOCK {
+        // when that failed and waiting was requested we now wait for the lock
+        if locking_method == LockingMethod::WaitForLock {
+            warn!("Waiting for lock");
+            loop {
+                lockerr = unsafe {
+                    if libc::flock(fd.as_raw_fd(), libc::LOCK_EX) == -1 {
+                        *libc::__errno_location()
+                    } else {
+                        0
+                    }
+                };
+                if lockerr != libc::EINTR {
+                    break;
+                };
+            }
+        } else {
+            return Err(ObjectStoreError::NoLock.into());
+        }
+    };
+
+    if lockerr != 0 {
+        let err = io::Error::from_raw_os_error(lockerr);
+        trace!("objectstore locking error: {:?}", err);
+        Err(err.into())
+    } else {
+        info!("objectstore locked");
+        Ok(())
     }
 }

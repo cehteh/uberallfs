@@ -40,6 +40,9 @@ pub enum ObjectStoreError {
     #[error("Can not traverse into a parent object")]
     NoParent,
 
+    #[error("Could not acquire lock on the objectstore")]
+    NoLock,
+
     #[error("Object {0:?} exists already")]
     ObjectExists(OsString),
 

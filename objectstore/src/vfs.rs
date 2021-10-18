@@ -8,7 +8,10 @@ use openat::Metadata;
 use uberall::libc;
 
 use crate::prelude::*;
-use crate::{Identifier, ObjectStore, PermissionCheck, PermissionController, SubObject, UserId};
+use crate::{
+    Identifier, LockingMethod::*, ObjectStore, PermissionCheck, PermissionController, SubObject,
+    UserId,
+};
 
 /// Filesystem alike access layer to the objectstore. Does access checks based
 /// on numeric user ids. These user ids are authenticated and mapped to pubkeys
@@ -23,7 +26,7 @@ pub struct VirtualFileSystem {
 #[cfg(unix)]
 impl VirtualFileSystem {
     pub fn new(dir: &Path) -> Result<VirtualFileSystem> {
-        let objectstore = Arc::new(ObjectStore::open(dir)?);
+        let objectstore = Arc::new(ObjectStore::open(dir, WaitForLock)?);
         let permission_controller = PermissionController::new(objectstore.clone());
         Ok(Self {
             objectstore,

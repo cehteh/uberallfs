@@ -6,10 +6,10 @@ use std::ffi::OsStr;
 use uberall::clap::ArgMatches;
 
 use crate::prelude::*;
-use crate::objectstore::ObjectStore;
+use crate::objectstore::{LockingMethod::*, ObjectStore, SubObject};
 
 pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let objectstore = ObjectStore::open(dir.as_ref())?;
+    let objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;
 
     let path = matches
         .value_of_os("PATH")

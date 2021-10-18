@@ -5,10 +5,12 @@ use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
 
 use uberall::clap::ArgMatches;
+use openat_ct as openat;
+use openat::Dir;
 
 use crate::prelude::*;
 use crate::identifier_kind::*;
-use crate::objectstore::{LockingMethod::*, ObjectStore};
+use crate::objectstore::{lock_fd, LockingMethod::*, ObjectStore};
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
     // PLANNED: can this be integrated in the clap validator?
@@ -89,6 +91,9 @@ pub(crate) fn init(dir: &Path) -> Result<()> {
         dir,
         crate::VERSION
     );
+
+    let lock = Dir::flags().open(dir)?;
+    lock_fd(&lock, TryLock)?;
 
     // initialize objectstore structure
     let mut objectstore_dir = PathBuf::from(dir);

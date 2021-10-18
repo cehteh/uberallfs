@@ -563,7 +563,10 @@ impl DirectoryPermissions {
 
 /// Place an exclusive lock on a file descriptor
 #[cfg(unix)]
-fn lock_fd<T: std::os::unix::io::AsRawFd>(fd: &T, locking_method: LockingMethod) -> Result<()> {
+pub(crate) fn lock_fd<T: std::os::unix::io::AsRawFd>(
+    fd: &T,
+    locking_method: LockingMethod,
+) -> Result<()> {
     let mut lockerr;
 
     // first try locking without wait

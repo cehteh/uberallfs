@@ -15,6 +15,7 @@ pub use parking_lot;
 pub use serde;
 pub use syslog;
 pub use thiserror;
+pub use cachedb;
 pub use uberall::UberAll;
 use prelude::*;
 

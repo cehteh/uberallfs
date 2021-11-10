@@ -11,6 +11,7 @@ use crate::identifier::{Identifier, IdentifierBuilder};
 use crate::identifier_kind::*;
 
 /// An Objectstore object
+#[derive(Debug)]
 pub struct Object {
     pub identifier: Identifier,
     opts:           ObjectImpl,

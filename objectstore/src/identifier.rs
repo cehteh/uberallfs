@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::ffi::OsStr;
+use std::hash::Hash;
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 use core::mem::MaybeUninit;
@@ -8,6 +9,7 @@ use std::convert::TryInto;
 use std::fmt::{self, Debug};
 
 use unchecked_unwrap::UncheckedUnwrap;
+use uberall::cachedb::*;
 
 use crate::objectpath::ObjectPath;
 use crate::prelude::*;
@@ -36,11 +38,37 @@ pub struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 #[derive(Debug, PartialEq, Clone)]
 pub struct Flipbase64(pub [u8; FLIPBASE64_LEN]);
 
-#[derive(PartialEq, Clone)]
+#[derive(Clone)]
 pub struct Identifier {
     kind:   IdentifierKind,
     base64: Flipbase64,
 }
+
+impl PartialEq for Identifier {
+    fn eq(&self, other: &Self) -> bool {
+        self.base64 == other.base64
+    }
+}
+
+impl Hash for Identifier {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.base64.0.hash(state)
+    }
+}
+
+impl Eq for Identifier {}
+
+impl Bucketize for Identifier {
+    fn bucket<const N: usize>(&self) -> usize {
+        self.base64.0[0..4]
+            .iter()
+            .map(|x| *x as usize)
+            .sum::<usize>()
+            % N
+    }
+}
+
+impl KeyTraits for Identifier {}
 
 pub struct IdentifierBuilder(IdentifierKind);
 

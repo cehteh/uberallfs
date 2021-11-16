@@ -2,12 +2,14 @@ use std::error::Error;
 use std::ffi::OsStr;
 use std::hash::Hash;
 use std::os::unix::ffi::OsStrExt;
+use std::path::Path;
 use std::path::PathBuf;
 use core::mem::MaybeUninit;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
 
+use arrayref::array_ref;
 use unchecked_unwrap::UncheckedUnwrap;
 use uberall::cachedb::*;
 
@@ -169,6 +171,18 @@ impl Identifier {
             kind: (&base64).try_into()?,
             base64,
         })
+    }
+
+    pub(crate) fn from_filename(path: &Path) -> Result<Identifier> {
+        let filename = path.file_name().ok_or(ObjectStoreError::InvalidIdentifier(
+            path.to_string_lossy().to_string(),
+        ))?;
+
+        if filename.len() == 44 {
+            Identifier::from_flipbase64(Flipbase64(*array_ref![filename.as_bytes(), 0, 44]))
+        } else {
+            Err(ObjectStoreError::InvalidIdentifier(filename.to_string_lossy().to_string()).into())
+        }
     }
 
     pub(crate) fn id_base64(&self) -> &Flipbase64 {

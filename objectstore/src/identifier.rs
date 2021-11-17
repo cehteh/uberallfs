@@ -34,7 +34,7 @@ const BINARY_ID_LEN: usize = (BITS_IN_BINARY_ID + 7) / 8;
 const FLIPBASE64_LEN: usize = (BITS_IN_BINARY_ID + KIND_ID_LEN * 8 + 5) / 6;
 const BASE64_AGGREGATE: usize = 4; // for valid non padded en/decoding base64 length must be a multiple of this
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct IdentifierBin(pub [u8; BINARY_ID_LEN]);
 
 #[derive(Debug, PartialEq, Clone)]

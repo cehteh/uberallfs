@@ -1,14 +1,18 @@
 use std::convert::TryInto;
-use std::ffi::{OsStr, OsString};
+use std::ffi::{CString, OsStr, OsString};
+use std::iter::FilterMap;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::prelude::RawFd;
+use std::sync::Arc;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
+use std::collections::{HashSet, VecDeque};
 
+use uberall::parking_lot::Mutex;
 use openat_ct as openat;
-use openat::{Dir, Metadata};
+use openat::{Dir, DirIter, Entry, Metadata};
 use regex::bytes::Regex;
-use uberall::{lazy_static::lazy_static, libc, UberAll};
+use uberall::{cachedb::*, lazy_static::lazy_static, libc, UberAll};
 
 use crate::prelude::*;
 use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
@@ -321,17 +325,35 @@ impl ObjectStore {
     }
 
     /// Opens a Dir handle to an Directory, identified by 'identifier'
-    pub fn open_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
-        self.objects
-            .sub_dir(identifier.to_pathbuf().as_path())
-            .map(Handle::Dir)
+    pub(crate) fn open_directory(&self, identifier: &Identifier) -> io::Result<Dir> {
+        self.objects.sub_dir(identifier.to_pathbuf().as_path())
     }
 
     /// Opens a DirIter handle to an Directory, identified by 'identifier'.
-    pub fn list_directory(&self, identifier: &Identifier) -> io::Result<Handle> {
-        self.objects
-            .list_dir(identifier.to_pathbuf().as_path())
-            .map(Handle::DirIter)
+    pub(crate) fn directory_iter(&self, identifier: &Identifier) -> io::Result<DirIter> {
+        self.objects.list_dir(identifier.to_pathbuf().as_path())
+    }
+
+    /// Returns an iterator listing name/identifier pairs for a directory
+    // TODO: make return type a struct DirEntry(CString, Identifier)
+    pub fn list_directory(
+        &self,
+        identifier: &Identifier,
+    ) -> io::Result<impl Iterator<Item = (PathBuf, Identifier)>> {
+        let dir = self.open_directory(identifier)?;
+
+        Ok(dir.list_self()?.filter_map(move |item| match item {
+            Ok(Entry {
+                name,
+                file_type: Some(Symlink),
+                ..
+            }) => {
+                let name = PathBuf::from(OsStr::from_bytes(name.to_bytes()));
+                let identifier = Identifier::from_filename(&dir.read_link(&name).ok()?).ok()?;
+                Some((name, identifier))
+            }
+            _ => None,
+        }))
     }
 
     /// Creates a directory for an 'identifier'.
@@ -387,11 +409,62 @@ impl ObjectStore {
             .symlink("root", path.as_os_str())
             .map_err(|e| e.into())
     }
+
+    /// Starting from a given root, walk all objects and store their identifiers in the given in_use HashSet.
+    /// Can be called multiple times with differnt roots to fill the 'in_use' set incrementally.
+    pub fn collect_objects_recursive(
+        &self,
+        root: &Identifier,
+        in_use: &mut HashSet<IdentifierBin>,
+    ) -> Result<()> {
+        // stores discovered directories not yet progressed
+        let to_do = Arc::new(Mutex::new(VecDeque::<Identifier>::new()));
+        to_do.lock().push_back(root.clone());
+
+        // stores all found identifiers in binary form
+        let in_use = Arc::new(Mutex::new(in_use));
+
+        while let Some(id) = {
+            let v = to_do.lock().pop_front();
+            v
+        } {
+            let id_bin = id.id_bin();
+            let mut in_use1 = in_use.lock();
+            if !in_use1.contains(&id_bin) {
+                trace!("dir: {:?}", id);
+                in_use1.insert(id_bin);
+                drop(in_use1);
+                for (_name, entry) in self.list_directory(&id)? {
+                    trace!("found: {:?}", entry);
+                    match entry.object_type() {
+                        crate::ObjectType::File => {
+                            in_use.lock().insert(entry.id_bin());
+                        }
+                        crate::ObjectType::Directory => {
+                            if {
+                                let v = in_use.lock().contains(&entry.id_bin());
+                                !v
+                            } {
+                                to_do.lock().push_back(entry);
+                            }
+                        }
+                        _ => {
+                            return Err(ObjectStoreError::UnsupportedObjectType(
+                                entry.kind().components(),
+                            )
+                            .into());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
-impl Drop for ObjectStore {
-    fn drop(&mut self) {}
-}
+// impl Drop for ObjectStore {
+//     fn drop(&mut self) {}
+// }
 
 /// Opening an objectstore will lock its directory, to obtain this lock there are two methods.
 ///

@@ -13,6 +13,7 @@ pub fn optargs() -> App<'static, 'static> {
         .subcommand(lock_optargs())
         .subcommand(show_optargs())
         .subcommand(mkdir_optargs())
+        .subcommand(gc_optargs())
         .subcommand(send_optargs())
         .subcommand(receive_optargs())
         .subcommand(getid_optargs())
@@ -52,6 +53,17 @@ fn lock_optargs() -> App<'static, 'static> {
                 .short("w")
                 .long("wait")
                 .help("Wait for the lock"),
+        )
+}
+
+fn gc_optargs() -> App<'static, 'static> {
+    SubCommand::with_name("gc")
+        .about("Run the Garbage collector")
+        .arg(
+            Arg::with_name("dry-run")
+                .long("dry-run")
+                .short("n")
+                .help("Don't remove any data, only show what would been done"),
         )
 }
 

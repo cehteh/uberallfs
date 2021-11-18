@@ -19,6 +19,7 @@ mod permissions;
 mod rev_cursor;
 mod vfs;
 
+mod gc;
 mod init;
 mod lock;
 mod mkdir;
@@ -52,6 +53,7 @@ pub fn cmd(matches: &ArgMatches) -> Result<()> {
     match matches.subcommand() {
         ("init", Some(sub_m)) => init::opt_init(dir, sub_m),
         ("lock", Some(sub_m)) => lock::opt_lock(dir, sub_m),
+        ("gc", Some(sub_m)) => gc::opt_gc(dir, sub_m),
         ("mkdir", Some(sub_m)) => mkdir::opt_mkdir(dir, sub_m),
         ("show", Some(sub_m)) => show::opt_show(dir, sub_m),
         (name, _) => {

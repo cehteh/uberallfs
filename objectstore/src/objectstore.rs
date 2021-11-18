@@ -13,6 +13,7 @@ use openat_ct as openat;
 use openat::{Dir, DirIter, Entry, Metadata};
 use regex::bytes::Regex;
 use uberall::{cachedb::*, lazy_static::lazy_static, libc, UberAll};
+use itertools::repeat_n;
 
 use crate::prelude::*;
 use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
@@ -459,6 +460,31 @@ impl ObjectStore {
             }
         }
         Ok(())
+    }
+
+    /// Returns an iterator over all objects in the store
+    pub fn all_objects(&self) -> impl Iterator<Item = Identifier> + '_ {
+        const URL_SAFE_ENCODE: &[u8; 64] =
+            &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
+
+        URL_SAFE_ENCODE
+            .iter()
+            .flat_map(|c| repeat_n(c, URL_SAFE_ENCODE.len()))
+            .zip(URL_SAFE_ENCODE.iter().cycle())
+            .flat_map(move |(a, b)| {
+                let dirname = PathBuf::from(OsStr::from_bytes(&[*a, *b]));
+                self.objects
+                    .list_dir(&dirname)
+                    .into_iter()
+                    .flat_map(|v| v)
+                    .filter_map(|r| {
+                        if let Ok(entry) = r {
+                            Some(Identifier::from_filename(Path::new(entry.file_name())).ok()?)
+                        } else {
+                            None
+                        }
+                    })
+            })
     }
 }
 

@@ -1,3 +1,6 @@
+use std::fmt::{self, Debug};
+use std::str;
+
 use crate::prelude::*;
 use crate::objectstore::{DirectoryPermissions, ObjectStore};
 // use serde::{Serialize, Deserialize};
@@ -47,8 +50,17 @@ impl Object {
         }
     }
 
+    #[inline]
+    pub fn identifier(&self) -> &Identifier {
+        &self.identifier
+    }
+
+    #[inline]
+    pub fn delete_method(&self) -> ObjectDeleteMethod {
+        self.opts.delete_method()
+    }
+
     // TODO: create from immutable file (checksummed)
-    // pub fn get_identifier
 }
 
 impl ObjectBuilder {
@@ -121,5 +133,32 @@ impl ObjectImpl {
                 Err(ObjectStoreError::UnsupportedObjectType(identifier.components()).into())
             }
         }
+    }
+
+    pub fn delete_method(&self) -> ObjectDeleteMethod {
+        match self {
+            ObjectImpl::PrivateMutable => ObjectDeleteMethod::Immediate,
+            _ => ObjectDeleteMethod::Unknown,
+        }
+    }
+}
+
+/// Policy for how objects should be deleted.
+pub enum ObjectDeleteMethod {
+    /// Can be immediately deleted.
+    Immediate,
+    /// Needs to be put into objects/deleted until expire as defind by some metdatda happens.
+    Expire,
+    /// Unknown/Errorneous
+    Unknown,
+}
+
+impl fmt::Display for ObjectDeleteMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "{}", match self {
+            ObjectDeleteMethod::Immediate => "delete immediate",
+            ObjectDeleteMethod::Expire => "delayed expire",
+            ObjectDeleteMethod::Unknown => "keep unknown",
+        })
     }
 }

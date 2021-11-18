@@ -10,7 +10,7 @@ use std::collections::{HashSet, VecDeque};
 
 use uberall::parking_lot::Mutex;
 use openat_ct as openat;
-use openat::{Dir, DirIter, Entry, Metadata};
+use openat::{Dir, DirIter, Entry, Metadata, SimpleType};
 use regex::bytes::Regex;
 use uberall::{cachedb::*, lazy_static::lazy_static, libc, UberAll};
 use itertools::repeat_n;
@@ -346,7 +346,7 @@ impl ObjectStore {
         Ok(dir.list_self()?.filter_map(move |item| match item {
             Ok(Entry {
                 name,
-                file_type: Some(Symlink),
+                file_type: Some(SimpleType::Symlink),
                 ..
             }) => {
                 let name = PathBuf::from(OsStr::from_bytes(name.to_bytes()));

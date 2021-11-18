@@ -8,6 +8,7 @@ use core::mem::MaybeUninit;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fmt::{self, Debug};
+use std::str;
 
 use arrayref::array_ref;
 use unchecked_unwrap::UncheckedUnwrap;
@@ -80,6 +81,14 @@ impl fmt::Debug for Identifier {
             .field("kind", &self.kind.components())
             .field("base64", &OsStr::from_bytes(&self.base64.0[..]))
             .finish()
+    }
+}
+
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "{}", unsafe {
+            str::from_utf8_unchecked(&self.base64.0[..])
+        })
     }
 }
 

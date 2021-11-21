@@ -7,7 +7,7 @@ use crate::prelude::*;
 use crate::objectstore::{LockingMethod::*, ObjectStore};
 
 pub(crate) fn opt_lock(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
-    let mut objectstore = ObjectStore::open(
+    let objectstore = ObjectStore::open(
         dir.as_ref(),
         if matches.is_present("wait") {
             WaitForLock

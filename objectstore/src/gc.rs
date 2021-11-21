@@ -1,15 +1,15 @@
-use std::collections::HashSet;
-use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
+use std::sync::Arc;
+use std::collections::{HashSet, VecDeque};
 
 use uberall::clap::ArgMatches;
+use uberall::parking_lot::Mutex;
 
-use crate::{identifier, prelude::*};
-use crate::identifier_kind::*;
+use crate::prelude::*;
 use crate::IdentifierBin;
 use crate::Identifier;
 use crate::object::{DeleteMethod, Object};
-use crate::objectstore::{LockingMethod::*, ObjectStore, SubObject};
+use crate::objectstore::{LockingMethod::*, ObjectStore};
 
 pub(crate) fn opt_gc(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;
@@ -32,7 +32,7 @@ impl ObjectStore {
         // discover referenced objects from all roots
         let mut in_use = HashSet::<IdentifierBin>::new();
         for root in roots {
-            self.collect_objects_recursive(&root, &mut in_use)?;
+            self.collect_objects_recursive(root, &mut in_use)?;
         }
 
         // iterate over all objects, filter referenced objects
@@ -48,7 +48,7 @@ impl ObjectStore {
     pub fn gc(&self, roots: &[Identifier], dry_run: bool) -> Result<()> {
         self.unreachable(roots)?.try_for_each(|id| {
             if !dry_run {
-                self.delete(id).into()
+                self.delete(id)
                 // TODO: report expire
             } else {
                 let object = Object::from(id);
@@ -56,8 +56,7 @@ impl ObjectStore {
                 // TODO: expire
                 Ok(())
             }
-        });
-        Ok(())
+        })
     }
 
     /// Delete an object from the objectstore. This is the low-level object deletion which
@@ -79,5 +78,54 @@ impl ObjectStore {
             )
             .into()),
         }
+    }
+
+    /// Starting from a given root, walk all objects and store their identifiers in the given in_use HashSet.
+    /// Can be called multiple times with differnt roots to fill the 'in_use' set incrementally.
+    pub fn collect_objects_recursive(
+        &self,
+        root: &Identifier,
+        in_use: &mut HashSet<IdentifierBin>,
+    ) -> Result<()> {
+        // stores discovered directories not yet progressed
+        let to_do = Arc::new(Mutex::new(VecDeque::<Identifier>::new()));
+        to_do.lock().push_back(root.clone());
+
+        // stores all found identifiers in binary form
+        let in_use = Arc::new(Mutex::new(in_use));
+
+        while let Some(id) = {
+            let v = to_do.lock().pop_front();
+            v
+        } {
+            let id_bin = id.id_bin();
+            let mut in_use1 = in_use.lock();
+            if !in_use1.contains(&id_bin) {
+                trace!("dir: {:?}", id);
+                in_use1.insert(id_bin);
+                drop(in_use1);
+                for (name, entry) in self.list_directory(&id)? {
+                    trace!("found: {:?}: {:?}", name, entry);
+                    match entry.object_type() {
+                        crate::ObjectType::File => {
+                            in_use.lock().insert(entry.id_bin());
+                        }
+                        crate::ObjectType::Directory => {
+                            let contains_not = !in_use.lock().contains(&entry.id_bin());
+                            if contains_not {
+                                to_do.lock().push_back(entry);
+                            }
+                        }
+                        _ => {
+                            return Err(ObjectStoreError::UnsupportedObjectType(
+                                entry.kind().components(),
+                            )
+                            .into());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }

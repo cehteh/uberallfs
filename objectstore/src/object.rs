@@ -77,7 +77,7 @@ impl ObjectBuilder {
 
     /// Realizes the final Object. This creates the respective files in the
     /// backing 'Objectstore'.
-    pub fn realize(self, objectstore: &mut ObjectStore) -> Result<Object> {
+    pub fn realize(self, objectstore: &ObjectStore) -> Result<Object> {
         self.opts.realize(self.identifier, objectstore)
     }
 }
@@ -109,11 +109,7 @@ impl ObjectImpl {
     }
 
     /// The actual per-ObjectImpl creation on the backing ObjectStore.
-    fn realize(
-        self,
-        identifier: IdentifierBuilder,
-        objectstore: &mut ObjectStore,
-    ) -> Result<Object> {
+    fn realize(self, identifier: IdentifierBuilder, objectstore: &ObjectStore) -> Result<Object> {
         match self {
             ObjectImpl::PrivateMutable => {
                 let identifier = identifier.with_binary(objectstore.rng_identifier());

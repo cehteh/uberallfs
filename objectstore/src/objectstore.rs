@@ -1,18 +1,14 @@
 use std::convert::TryInto;
-use std::ffi::{CString, OsStr, OsString};
-use std::iter::FilterMap;
+use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::prelude::RawFd;
-use std::sync::Arc;
 use std::{fs::OpenOptions, path::Path, path::PathBuf};
-use std::collections::{HashSet, VecDeque};
 
-use uberall::parking_lot::Mutex;
 use openat_ct as openat;
 use openat::{Dir, DirIter, Entry, Metadata, SimpleType};
 use regex::bytes::Regex;
-use uberall::{cachedb::*, lazy_static::lazy_static, libc, UberAll};
+use uberall::{lazy_static::lazy_static, libc, UberAll};
 use itertools::repeat_n;
 
 use crate::prelude::*;
@@ -44,7 +40,7 @@ impl ObjectStore {
         use std::io::{BufRead, BufReader};
 
         let mut version_name = PathBuf::from(dir);
-        version_name.push("objectstore.version");
+        version_name.push("objects/version");
 
         let mut version_str: String = String::new();
 
@@ -80,7 +76,7 @@ impl ObjectStore {
     }
 
     /// Returns an all-random binary representaton of an Object Identifier.
-    pub(crate) fn rng_identifier(&mut self) -> IdentifierBin {
+    pub(crate) fn rng_identifier(&self) -> IdentifierBin {
         IdentifierBin(self.uberall.rng_gen())
     }
 
@@ -215,10 +211,7 @@ impl ObjectStore {
                         trace!("subobject: ok {:?}", &r);
                         root = r;
                     }
-                    Err(err) => match err
-                        .downcast_ref::<io::Error>()
-                        .and_then(|ioerr| Some(ioerr.kind()))
-                    {
+                    Err(err) => match err.downcast_ref::<io::Error>().map(io::Error::kind) {
                         Some(io::ErrorKind::NotFound) => {
                             // execpted case, just push path together
                             trace!("subobject: {:?}", &err);
@@ -411,58 +404,8 @@ impl ObjectStore {
             .map_err(|e| e.into())
     }
 
-    /// Starting from a given root, walk all objects and store their identifiers in the given in_use HashSet.
-    /// Can be called multiple times with differnt roots to fill the 'in_use' set incrementally.
-    pub fn collect_objects_recursive(
-        &self,
-        root: &Identifier,
-        in_use: &mut HashSet<IdentifierBin>,
-    ) -> Result<()> {
-        // stores discovered directories not yet progressed
-        let to_do = Arc::new(Mutex::new(VecDeque::<Identifier>::new()));
-        to_do.lock().push_back(root.clone());
-
-        // stores all found identifiers in binary form
-        let in_use = Arc::new(Mutex::new(in_use));
-
-        while let Some(id) = {
-            let v = to_do.lock().pop_front();
-            v
-        } {
-            let id_bin = id.id_bin();
-            let mut in_use1 = in_use.lock();
-            if !in_use1.contains(&id_bin) {
-                trace!("dir: {:?}", id);
-                in_use1.insert(id_bin);
-                drop(in_use1);
-                for (_name, entry) in self.list_directory(&id)? {
-                    trace!("found: {:?}", entry);
-                    match entry.object_type() {
-                        crate::ObjectType::File => {
-                            in_use.lock().insert(entry.id_bin());
-                        }
-                        crate::ObjectType::Directory => {
-                            if {
-                                let v = in_use.lock().contains(&entry.id_bin());
-                                !v
-                            } {
-                                to_do.lock().push_back(entry);
-                            }
-                        }
-                        _ => {
-                            return Err(ObjectStoreError::UnsupportedObjectType(
-                                entry.kind().components(),
-                            )
-                            .into());
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// Returns an iterator over all objects in the store
+    // PLANNED: return -> impl Iterator<Item = Result<Identifier, ErrorWithContext>> later, fsck may need this
     pub fn all_objects(&self) -> impl Iterator<Item = Identifier> + '_ {
         const URL_SAFE_ENCODE: &[u8; 64] =
             &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
@@ -476,7 +419,7 @@ impl ObjectStore {
                 self.objects
                     .list_dir(&dirname)
                     .into_iter()
-                    .flat_map(|v| v)
+                    .flatten()
                     .filter_map(|r| {
                         if let Ok(entry) = r {
                             Some(Identifier::from_filename(Path::new(entry.file_name())).ok()?)
@@ -487,10 +430,6 @@ impl ObjectStore {
             })
     }
 }
-
-// impl Drop for ObjectStore {
-//     fn drop(&mut self) {}
-// }
 
 /// Opening an objectstore will lock its directory, to obtain this lock there are two methods.
 ///

@@ -48,7 +48,7 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                     let object =
                         Object::build(ObjectType::Directory, sharing_policy, Mutability::Mutable)
                             .acl(&acl)
-                            .realize(&mut objectstore)?;
+                            .realize(&objectstore)?;
                     trace!("identifier: {:?}", &object.identifier);
 
                     objectstore.create_link(&object.identifier, SubObject(&src, name))?;
@@ -86,17 +86,20 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
             None => Object::build(ObjectType::Directory, sharing_policy, Mutability::Mutable)
                 .acl(&acl)
-                .realize(&mut objectstore)?,
+                .realize(&objectstore)?,
         };
 
         trace!("identifier: {:?}", &object.identifier);
 
         // FIXME: remove object when failed and not from SOURCE, remove created parents
-        // as well
-        objectstore.create_link(
-            &object.identifier,
-            SubObject(&src, remaining.components().last().unwrap().as_os_str()),
-        )
+        // as well (Vec listing things to be undone (gracefully because of races) )
+        // TODO: objectstore::gc() should clean up stale objects
+        objectstore
+            .create_link(
+                &object.identifier,
+                SubObject(&src, remaining.components().last().unwrap().as_os_str()),
+            )
+            .map_err(|err| err)
     } else {
         Err(io::Error::from(io::ErrorKind::AlreadyExists).into())
     }

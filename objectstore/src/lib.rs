@@ -1,7 +1,8 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
+#![feature(io_error_more)]
 mod prelude;
-use uberall::{clap::ArgMatches, lazy_static, log};
+use uberall::clap::ArgMatches;
 
 use crate::prelude::*;
 
@@ -31,9 +32,8 @@ pub use identifier_kind::{Mutability, ObjectType, SharingPolicy};
 pub use object::Object;
 pub use permissions::{PermissionCheck, PermissionController};
 pub use vfs::VirtualFileSystem;
-
-pub use crate::objectpath::ObjectPath;
-pub use crate::objectstore::{LockingMethod, ObjectStore, SubObject};
+pub use objectpath::ObjectPath;
+pub use objectstore::{LockingMethod, ObjectStore, SubObject};
 
 // PLANNED: mockup types defined and exported that dont have a implementation
 // yet

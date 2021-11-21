@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 
+use itertools::repeat_n;
 use uberall::clap::ArgMatches;
 use openat_ct as openat;
 use openat::Dir;
@@ -27,7 +28,7 @@ fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<()> {
             .unwrap_or(false)
         {
             let mut objectstore_dir = PathBuf::from(dir);
-            objectstore_dir.push("objectstore.version");
+            objectstore_dir.push("objects/version");
 
             if objectstore_dir.is_file() {
                 if !force {
@@ -49,9 +50,9 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
 
     valid_objectstore_dir(dir, matches.is_present("force"))?;
 
-    init(dir)?;
+    ObjectStore::create_objectstore(dir)?;
 
-    let mut objectstore = ObjectStore::open(dir, WaitForLock)?;
+    let objectstore = ObjectStore::open(dir, WaitForLock)?;
 
     use crate::object::Object;
     let maybe_root = if let Some(archive) = matches.value_of_os("ARCHIVE") {
@@ -70,7 +71,7 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
                 SharingPolicy::Private,
                 Mutability::Mutable,
             )
-            .realize(&mut objectstore),
+            .realize(&objectstore),
         )
     } else {
         None
@@ -83,48 +84,53 @@ pub(crate) fn opt_init(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     }
 }
 
-pub(crate) fn init(dir: &Path) -> Result<()> {
-    create_dir_all(dir)?;
+impl ObjectStore {
+    /// Create and initialize a new objectstore at the given dir.
+    pub fn create_objectstore(dir: &Path) -> Result<()> {
+        create_dir_all(dir)?;
 
-    debug!(
-        "Initialize objectstore in {:?}, version {}",
-        dir,
-        crate::VERSION
-    );
+        debug!(
+            "Initialize objectstore in {:?}, version {}",
+            dir,
+            crate::VERSION
+        );
 
-    let lock = Dir::flags().open(dir)?;
-    lock_fd(&lock, TryLock)?;
+        let lock = Dir::flags().open(dir)?;
+        lock_fd(&lock, TryLock)?;
 
-    // initialize objectstore structure
-    let mut objectstore_dir = PathBuf::from(dir);
-    objectstore_dir.push("config");
-    create_dir_all(&objectstore_dir)?;
+        // initialize objectstore structure
+        let mut objects = PathBuf::from(dir);
+        objects.push("objects");
+        trace!("creating dir: {:?}", objects);
+        create_dir_all(&objects)?;
 
-    let mut objectstore_dir = PathBuf::from(dir);
-    objectstore_dir.push("objects");
-    create_dir_all(&objectstore_dir)?;
-
-    for sub in ["tmp", "delete"].iter() {
-        objectstore_dir.push(sub);
-        create_dir_all(&objectstore_dir)?;
-        objectstore_dir.pop();
-    }
-
-    // https://github.com/marshallpierce/rust-base64/issues/41
-    const URL_SAFE_ENCODE: &[u8; 64] =
-        &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
-    for a in URL_SAFE_ENCODE.iter() {
-        for b in URL_SAFE_ENCODE.iter() {
-            // PLANNED: objects/delete/ab/
-            objectstore_dir.push(OsStr::from_bytes(&[*a, *b]));
-            create_dir_all(&objectstore_dir)?;
-            objectstore_dir.pop();
+        for sub in ["tmp", "delete"] {
+            objects.push(sub);
+            trace!("creating dir: {:?}", objects);
+            create_dir_all(&objects)?;
+            objects.pop();
         }
+
+        objects.push("version");
+        trace!("creating file: {:?}", objects);
+        fs::write(&objects, format!("{}\n", crate::VERSION))?;
+        objects.pop();
+
+        // https://github.com/marshallpierce/rust-base64/issues/41
+        const URL_SAFE_ENCODE: &[u8; 64] =
+            &*b"ABCDEFGHIJLKMNOPQRSTUVWXYZabcdefghijlkmnopqrstuvwxyz0123456789-_";
+
+        URL_SAFE_ENCODE
+            .iter()
+            .flat_map(|c| repeat_n(c, URL_SAFE_ENCODE.len()))
+            .zip(URL_SAFE_ENCODE.iter().cycle())
+            .try_for_each(move |(a, b)| -> Result<()> {
+                // PLANNED: objects/delete/ab/
+                objects.push(OsStr::from_bytes(&[*a, *b]));
+                trace!("creating dir: {:?}", objects);
+                create_dir_all(&objects)?;
+                objects.pop();
+                Ok(())
+            })
     }
-
-    let mut objectstore_dir = PathBuf::from(dir);
-    objectstore_dir.push("objectstore.version");
-    fs::write(objectstore_dir, format!("{}\n", crate::VERSION))?;
-
-    Ok(())
 }

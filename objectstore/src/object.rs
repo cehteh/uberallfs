@@ -56,7 +56,7 @@ impl Object {
     }
 
     #[inline]
-    pub fn delete_method(&self) -> ObjectDeleteMethod {
+    pub fn delete_method(&self) -> DeleteMethod {
         self.opts.delete_method()
     }
 
@@ -135,16 +135,16 @@ impl ObjectImpl {
         }
     }
 
-    pub fn delete_method(&self) -> ObjectDeleteMethod {
+    pub fn delete_method(&self) -> DeleteMethod {
         match self {
-            ObjectImpl::PrivateMutable => ObjectDeleteMethod::Immediate,
-            _ => ObjectDeleteMethod::Unknown,
+            ObjectImpl::PrivateMutable => DeleteMethod::Immediate,
+            _ => DeleteMethod::Unknown,
         }
     }
 }
 
 /// Policy for how objects should be deleted.
-pub enum ObjectDeleteMethod {
+pub enum DeleteMethod {
     /// Can be immediately deleted.
     Immediate,
     /// Needs to be put into objects/deleted until expire as defind by some metdatda happens.
@@ -153,12 +153,12 @@ pub enum ObjectDeleteMethod {
     Unknown,
 }
 
-impl fmt::Display for ObjectDeleteMethod {
+impl fmt::Display for DeleteMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         write!(f, "{}", match self {
-            ObjectDeleteMethod::Immediate => "delete immediate",
-            ObjectDeleteMethod::Expire => "delayed expire",
-            ObjectDeleteMethod::Unknown => "keep unknown",
+            DeleteMethod::Immediate => "delete immediate",
+            DeleteMethod::Expire => "delayed expire",
+            DeleteMethod::Unknown => "keep unknown",
         })
     }
 }

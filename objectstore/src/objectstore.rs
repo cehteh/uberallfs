@@ -23,10 +23,10 @@ pub struct Meta;
 #[derive(Debug)]
 pub struct ObjectStore {
     #[allow(dead_code)]
-    version: u32,
+    version:            u32,
     #[allow(dead_code)]
-    handle:  Dir,
-    objects: Dir,
+    handle:             Dir,
+    pub(crate) objects: Dir,
 
     uberall: UberAll,
     /* TODO: log: File, logging 'dangerous' actions to be undone

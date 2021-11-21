@@ -10,7 +10,7 @@ edition = "2018"
 unchecked_unwrap = "3.0"
 base64 = "0.13"
 regex = "1"
-openat_ct = "0.2.0-pre0"
+openat_ct = "0.2.0-pre3"
 uberall = { path = "../uberall" }
 arrayref = "0.3"
 itertools = "0.10"

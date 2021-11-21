@@ -19,12 +19,12 @@ pub struct Meta;
 #[derive(Debug)]
 pub struct ObjectStore {
     #[allow(dead_code)]
-    version:            u32,
-    #[allow(dead_code)]
-    handle:             Dir,
+    pub(crate) version: u32,
+    //#[allow(dead_code)]
+    // handle:             Dir, // FIXME: remove handle, needs only objects and lock on that
     pub(crate) objects: Dir,
 
-    uberall: UberAll,
+    pub(crate) uberall: UberAll,
     /* TODO: log: File, logging 'dangerous' actions to be undone
      * PLANNED: pid: dir stack for all open dir handles (cwd/parents)
      * PLANNED: fd/object cache (drop handles when permissions get changed), MRU
@@ -56,8 +56,10 @@ impl ObjectStore {
 
     /// Opens an ObjectStore at the given path.
     pub fn open(dir: &Path, locking_method: LockingMethod) -> Result<ObjectStore> {
-        let handle = Dir::flags().open(dir)?;
-        lock_fd(&handle, locking_method)?;
+        let mut objects_dir = PathBuf::from(dir);
+        objects_dir.push("objects");
+        let objects = Dir::flags().open(&objects_dir)?;
+        lock_fd(&objects, locking_method)?;
 
         let version = Self::get_version(dir)?;
         debug!("open {:?}, version: {}", dir, version);
@@ -65,11 +67,8 @@ impl ObjectStore {
             return Err(ObjectStoreError::UnsupportedObjectStore(version).into());
         }
 
-        let objects = handle.sub_dir("objects")?;
-
         Ok(ObjectStore {
             version,
-            handle,
             objects,
             uberall: UberAll::new()?,
         })

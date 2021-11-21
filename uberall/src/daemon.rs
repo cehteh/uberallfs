@@ -3,7 +3,7 @@ use std::process;
 
 use ipc_channel::ipc;
 use once_cell::sync::OnceCell;
-use clap::{AppSettings, ArgMatches};
+use clap::ArgMatches;
 
 use crate::prelude::*;
 use crate::serde::{Deserialize, Serialize};

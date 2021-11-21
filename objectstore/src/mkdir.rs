@@ -37,9 +37,9 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         }
 
         let count = remaining.components().count();
+
         // create parent dirs
         if count > 1 {
-            // TODO: factor out to handle errors and delete subdirs on rollback
             if matches.is_present("parents") {
                 for name in remaining.components().take(count - 1) {
                     let name = name.as_os_str();
@@ -90,10 +90,6 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
         };
 
         trace!("identifier: {:?}", &object.identifier);
-
-        // FIXME: remove object when failed and not from SOURCE, remove created parents
-        // as well (Vec listing things to be undone (gracefully because of races) )
-        // TODO: objectstore::gc() should clean up stale objects
         objectstore
             .create_link(
                 &object.identifier,

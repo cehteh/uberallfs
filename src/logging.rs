@@ -42,7 +42,6 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
         .trace(BrightBlack);
 
     let counter: AtomicU64 = AtomicU64::new(0);
-
     let seq_num = move || counter.fetch_add(1, Ordering::SeqCst);
 
     let mut logger = fern::Dispatch::new();
@@ -62,7 +61,6 @@ pub(crate) fn init_logging(matches: &ArgMatches) {
         });
     } else {
         logger = logger.format(move |out, message, record| {
-            let thread_id = std::thread::current();
             out.finish(format_args!(
                 "{:>5}: {}",
                 colors.color(record.level()),

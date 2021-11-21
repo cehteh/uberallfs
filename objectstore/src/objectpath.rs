@@ -46,7 +46,6 @@ impl ObjectPath for PathBuf {
 
     fn push_identifier(&mut self, identifier: &Identifier) -> &mut Self {
         let bytes = identifier.id_base64().0;
-        self.reserve(bytes.len() + 4); // 4 = 2 chars for level, delimiter and zero terminator
         self.push(OsStr::from_bytes(&bytes[..2]));
         self.push(OsStr::from_bytes(&bytes));
         self

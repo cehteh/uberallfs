@@ -1,9 +1,7 @@
 use std::fmt::{self, Debug};
-use std::str;
 
 use crate::prelude::*;
 use crate::objectstore::{DirectoryPermissions, ObjectStore};
-// use serde::{Serialize, Deserialize};
 
 #[derive(Debug)]
 pub struct Acl;

@@ -33,7 +33,8 @@ pub use object::Object;
 pub use permissions::{PermissionCheck, PermissionController};
 pub use vfs::VirtualFileSystem;
 pub use objectpath::ObjectPath;
-pub use objectstore::{LockingMethod, ObjectStore, SubObject};
+pub use objectstore::{ObjectStore, SubObject};
+pub use lock::{lock_fd, LockingMethod};
 
 // PLANNED: mockup types defined and exported that dont have a implementation
 // yet

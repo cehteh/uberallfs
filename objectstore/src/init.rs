@@ -13,7 +13,7 @@ use openat::Dir;
 
 use crate::prelude::*;
 use crate::identifier_kind::*;
-use crate::objectstore::{lock_fd, LockingMethod::*, ObjectStore};
+use crate::{lock_fd, LockingMethod::*, ObjectStore};
 
 fn valid_objectstore_dir(dir: &Path, force: bool) -> Result<Dir> {
     // PLANNED: can this be integrated in the clap validator?

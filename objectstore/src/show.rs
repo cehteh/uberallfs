@@ -6,7 +6,7 @@ use std::ffi::OsStr;
 use uberall::clap::ArgMatches;
 
 use crate::prelude::*;
-use crate::objectstore::{LockingMethod::*, ObjectStore};
+use crate::{LockingMethod::*, ObjectStore};
 
 pub(crate) fn opt_show(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;

@@ -9,7 +9,7 @@ use crate::prelude::*;
 use crate::IdentifierBin;
 use crate::Identifier;
 use crate::object::{DeleteMethod, Object};
-use crate::objectstore::{LockingMethod::*, ObjectStore};
+use crate::{LockingMethod::*, ObjectStore};
 
 pub(crate) fn opt_gc(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;

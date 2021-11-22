@@ -12,7 +12,10 @@ use uberall::{lazy_static::lazy_static, libc, UberAll};
 use itertools::repeat_n;
 
 use crate::prelude::*;
-use crate::{objectpath, Flipbase64, Handle, Identifier, IdentifierBin, Object, ObjectPath};
+use crate::{
+    lock_fd, objectpath, Flipbase64, Handle, Identifier, IdentifierBin, LockingMethod, Object,
+    ObjectPath,
+};
 
 pub struct Meta;
 
@@ -430,16 +433,6 @@ impl ObjectStore {
     }
 }
 
-/// Opening an objectstore will lock its directory, to obtain this lock there are two methods.
-///
-///  * TryLock:: Try to lock the objectstore and return an error immediately when that fails.
-///  * WaitForLock:: Wait until the lock becomes available.
-#[derive(PartialEq)]
-pub enum LockingMethod {
-    TryLock,
-    WaitForLock,
-}
-
 /// identifier/name pair for a subobject in a directory
 #[derive(Debug)]
 pub struct SubObject<'a>(pub &'a Identifier, pub &'a OsStr);
@@ -595,58 +588,5 @@ impl DirectoryPermissions {
 
     fn get(self) -> libc::mode_t {
         self.0
-    }
-}
-
-/// Place an exclusive lock on a file descriptor
-#[cfg(unix)]
-pub(crate) fn lock_fd<T: std::os::unix::io::AsRawFd>(
-    fd: &T,
-    locking_method: LockingMethod,
-) -> Result<()> {
-    let mut lockerr;
-
-    // first try locking without wait
-    loop {
-        lockerr = unsafe {
-            if libc::flock(fd.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) == -1 {
-                *libc::__errno_location()
-            } else {
-                0
-            }
-        };
-        if lockerr != libc::EINTR {
-            break;
-        };
-    }
-
-    if lockerr == libc::EWOULDBLOCK {
-        // when that failed and waiting was requested we now wait for the lock
-        if locking_method == LockingMethod::WaitForLock {
-            warn!("Waiting for lock");
-            loop {
-                lockerr = unsafe {
-                    if libc::flock(fd.as_raw_fd(), libc::LOCK_EX) == -1 {
-                        *libc::__errno_location()
-                    } else {
-                        0
-                    }
-                };
-                if lockerr != libc::EINTR {
-                    break;
-                };
-            }
-        } else {
-            return Err(ObjectStoreError::NoLock.into());
-        }
-    };
-
-    if lockerr != 0 {
-        let err = io::Error::from_raw_os_error(lockerr);
-        trace!("objectstore locking error: {:?}", err);
-        Err(err.into())
-    } else {
-        info!("objectstore locked");
-        Ok(())
     }
 }

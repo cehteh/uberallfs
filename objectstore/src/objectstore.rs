@@ -352,21 +352,6 @@ impl ObjectStore {
         }))
     }
 
-    /// Creates a directory for an 'identifier'.
-    pub(crate) fn create_directory(
-        &self,
-        identifier: &Identifier,
-        perm: DirectoryPermissions,
-    ) -> Result<()> {
-        identifier.ensure_dir()?;
-        let mut path = PathBuf::new();
-        path.push_identifier(identifier);
-        info!("create_directory: {:?}", path.as_os_str());
-
-        self.objects.create_dir(path.as_os_str(), perm.get())?;
-        Ok(())
-    }
-
     pub(crate) fn change_access(
         &self,
         _identifier: &Identifier,
@@ -586,7 +571,7 @@ impl DirectoryPermissions {
         self
     }
 
-    fn get(self) -> libc::mode_t {
+    pub(crate) fn get(self) -> libc::mode_t {
         self.0
     }
 }

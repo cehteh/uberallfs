@@ -6,7 +6,9 @@ use uberall::clap::ArgMatches;
 use crate::prelude::*;
 use crate::identifier_kind::*;
 use crate::object::Object;
-use crate::{LockingMethod::*, ObjectStore, SubObject};
+use crate::{
+    DirectoryPermissions, Identifier, LockingMethod::*, ObjectPath, ObjectStore, SubObject,
+};
 
 pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
     let objectstore = ObjectStore::open(dir.as_ref(), WaitForLock)?;
@@ -98,5 +100,22 @@ pub(crate) fn opt_mkdir(dir: &OsStr, matches: &ArgMatches) -> Result<()> {
             .map_err(|err| err)
     } else {
         Err(io::Error::from(io::ErrorKind::AlreadyExists).into())
+    }
+}
+
+impl ObjectStore {
+    /// Creates a directory for an 'identifier'.
+    pub(crate) fn create_directory(
+        &self,
+        identifier: &Identifier,
+        perm: DirectoryPermissions,
+    ) -> Result<()> {
+        identifier.ensure_dir()?;
+        let mut path = PathBuf::new();
+        path.push_identifier(identifier);
+        info!("create_directory: {:?}", path.as_os_str());
+
+        self.objects.create_dir(path.as_os_str(), perm.get())?;
+        Ok(())
     }
 }
